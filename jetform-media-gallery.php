@@ -2,7 +2,7 @@
 /**
  * Plugin Name: JetFormBuilder Media Gallery Field
  * Description: Agrega un campo de galería de medios para JetFormBuilder que permite seleccionar imagen destacada y galería para el CPT "singlecar"
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Tu Nombre
  * Text Domain: jetform-media-gallery
  */
@@ -47,6 +47,12 @@
  * 
  * CHANGELOG:
  * ---------
+ * 1.0.2
+ * - Agregada nueva pestaña de administración de logs
+ * - Implementada interfaz para activar/desactivar modo debug
+ * - Añadido visor de logs con colores por tipo de mensaje
+ * - Mejorada la gestión y rotación de archivos de log
+ * 
  * 1.0.1
  * - Corregido el procesamiento de campos del formulario
  * - Mejorado el sistema de logging
@@ -63,7 +69,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Definir constantes
-define('JFB_MEDIA_GALLERY_VERSION', '1.0.1');
+define('JFB_MEDIA_GALLERY_VERSION', '1.0.2');
 define('JFB_MEDIA_GALLERY_PATH', plugin_dir_path(__FILE__));
 define('JFB_MEDIA_GALLERY_URL', plugin_dir_url(__FILE__));
 
@@ -88,14 +94,21 @@ class JetForm_Media_Gallery_Field {
      * Almacena el modo de depuración
      */
     private $debug_mode = false;
+    private $max_log_size = 5242880; // 5MB en bytes
+    private $max_log_files = 5;
     
     private $admin;
     private $settings;
+    
+    private $version = '1.0.1';
+    private $log_file;
     
     /**
      * Constructor
      */
     public function __construct() {
+        $this->log_file = WP_CONTENT_DIR . '/debug-media-gallery.log';
+        
         // Inicializar la página de administración
         $this->admin = new JetForm_Media_Gallery_Admin();
         
@@ -113,11 +126,16 @@ class JetForm_Media_Gallery_Field {
             'select_button_order' => 'before',
             'title_tag' => 'h4',
             'title_size' => 16,
-            'title_classes' => ''
+            'title_classes' => '',
+            'debug_mode' => false, // Nueva opción para controlar el modo debug
+            'max_log_size' => 5, // Tamaño máximo del log en MB
+            'max_log_files' => 5 // Número máximo de archivos de log
         ]);
         
-        // Forzar modo de depuración
-        $this->debug_mode = true;
+        // Configurar modo de depuración desde los ajustes
+        $this->debug_mode = !empty($this->settings['debug_mode']);
+        $this->max_log_size = absint($this->settings['max_log_size']) * 1024 * 1024; // Convertir MB a bytes
+        $this->max_log_files = absint($this->settings['max_log_files']);
         
         // Registrar el shortcode
         add_shortcode('media_gallery_field', [$this, 'render_shortcode']);
@@ -766,22 +784,38 @@ class JetForm_Media_Gallery_Field {
             return;
         }
         
-        // Usar wp-content directamente para los logs
-        $log_file = WP_CONTENT_DIR . '/debug-media-gallery.log';
+        $this->maybe_rotate_log();
         
-        // Formatear el mensaje
-        $formatted_message = sprintf(
-            "[%s] [%s] %s\n",
-            date('Y-m-d H:i:s'),
-            wp_get_current_user()->user_login,
-            is_array($message) || is_object($message) ? print_r($message, true) : $message
-        );
-        
-        // Escribir mensaje
-        error_log($formatted_message, 3, $log_file);
-        
-        // También escribir en el log de WordPress para depuración
-        error_log('JetForm Media Gallery: ' . $formatted_message);
+        $timestamp = current_time('Y-m-d H:i:s');
+        $log_message = "[{$timestamp}] {$message}\n";
+        file_put_contents($this->log_file, $log_message, FILE_APPEND);
+    }
+    
+    /**
+     * Rotar archivo de log si es necesario
+     */
+    private function maybe_rotate_log() {
+        if (!file_exists($this->log_file)) {
+            return;
+        }
+
+        $size = filesize($this->log_file);
+        if ($size >= $this->max_log_size) {
+            // Rotar archivos existentes
+            for ($i = $this->max_log_files - 1; $i >= 1; $i--) {
+                $old_file = $this->log_file . '.' . $i;
+                $new_file = $this->log_file . '.' . ($i + 1);
+                if (file_exists($old_file)) {
+                    rename($old_file, $new_file);
+                }
+            }
+
+            // Mover el archivo actual
+            rename($this->log_file, $this->log_file . '.1');
+
+            // Crear nuevo archivo vacío
+            file_put_contents($this->log_file, '');
+        }
     }
 
     /**

@@ -2,13 +2,20 @@
 class JetForm_Media_Gallery_Admin {
     private $option_name = 'jetform_media_gallery_settings';
     private $active_tab;
+    private $log_file;
     
     public function __construct() {
         add_action('admin_menu', [$this, 'add_settings_page']);
         add_action('admin_init', [$this, 'register_settings']);
         
+        // Configurar archivo de log
+        $this->log_file = WP_CONTENT_DIR . '/debug-media-gallery.log';
+        
         // Set active tab
         $this->active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
+        
+        // Manejar acciones de logs
+        add_action('admin_init', [$this, 'handle_log_actions']);
     }
     
     public function add_settings_page() {
@@ -114,6 +121,41 @@ class JetForm_Media_Gallery_Admin {
             'jetform-media-gallery-fields',
             'fields_settings'
         );
+
+        // Añadir sección de depuración
+        add_settings_section(
+            'debug_settings',
+            __('Configuración de Depuración', 'jetform-media-gallery'),
+            [$this, 'render_debug_section'],
+            'jetform-media-gallery'
+        );
+
+        // Campo para activar/desactivar debug
+        add_settings_field(
+            'debug_mode',
+            __('Modo de depuración', 'jetform-media-gallery'),
+            [$this, 'render_debug_mode_field'],
+            'jetform-media-gallery',
+            'debug_settings'
+        );
+
+        // Campo para tamaño máximo del log
+        add_settings_field(
+            'max_log_size',
+            __('Tamaño máximo del log (MB)', 'jetform-media-gallery'),
+            [$this, 'render_max_log_size_field'],
+            'jetform-media-gallery',
+            'debug_settings'
+        );
+
+        // Campo para número máximo de archivos
+        add_settings_field(
+            'max_log_files',
+            __('Número máximo de archivos de log', 'jetform-media-gallery'),
+            [$this, 'render_max_log_files_field'],
+            'jetform-media-gallery',
+            'debug_settings'
+        );
     }
     
     public function render_settings_page() {
@@ -132,70 +174,33 @@ class JetForm_Media_Gallery_Admin {
                     <!-- Tabs -->
                     <nav class="nav-tab-wrapper">
                         <a href="?page=jetform-media-gallery&tab=general" class="nav-tab <?php echo $this->active_tab == 'general' ? 'nav-tab-active' : ''; ?>">
-                            <?php _e('General Settings', 'jetform-media-gallery'); ?>
+                            <?php _e('Configuración General', 'jetform-media-gallery'); ?>
                         </a>
                         <a href="?page=jetform-media-gallery&tab=fields" class="nav-tab <?php echo $this->active_tab == 'fields' ? 'nav-tab-active' : ''; ?>">
-                            <?php _e('Fields Configuration', 'jetform-media-gallery'); ?>
+                            <?php _e('Configuración de Campos', 'jetform-media-gallery'); ?>
+                        </a>
+                        <a href="?page=jetform-media-gallery&tab=logs" class="nav-tab <?php echo $this->active_tab == 'logs' ? 'nav-tab-active' : ''; ?>">
+                            <?php _e('Logs', 'jetform-media-gallery'); ?>
                         </a>
                     </nav>
 
-                    <form action="options.php" method="post">
-                        <?php
-                        settings_fields($this->option_name);
-                        
-                        // Mostrar los campos según la pestaña activa
-                        if ($this->active_tab == 'general') {
-                            do_settings_sections('jetform-media-gallery-general');
-                        } else {
-                            do_settings_sections('jetform-media-gallery-fields');
-                        }
-                        
-                        // Agregar campos ocultos para mantener los valores de la otra pestaña
-                        if ($this->active_tab == 'general') {
-                            if (isset($options['image_fields'])) {
-                                foreach ($options['image_fields'] as $index => $field) {
-                                    foreach ($field as $key => $value) {
-                                        if (is_array($value)) {
-                                            foreach ($value as $subkey => $subvalue) {
-                                                printf(
-                                                    '<input type="hidden" name="%s[image_fields][%d][%s][%s]" value="%s">',
-                                                    esc_attr($this->option_name),
-                                                    $index,
-                                                    esc_attr($key),
-                                                    esc_attr($subkey),
-                                                    esc_attr($subvalue)
-                                                );
-                                            }
-                                        } else {
-                                            printf(
-                                                '<input type="hidden" name="%s[image_fields][%d][%s]" value="%s">',
-                                                esc_attr($this->option_name),
-                                                $index,
-                                                esc_attr($key),
-                                                esc_attr($value)
-                                            );
-                                        }
-                                    }
-                                }
+                    <?php if ($this->active_tab == 'logs') : ?>
+                        <?php $this->render_logs_page(); ?>
+                    <?php else: ?>
+                        <form action="options.php" method="post">
+                            <?php
+                            settings_fields($this->option_name);
+                            
+                            if ($this->active_tab == 'general') {
+                                do_settings_sections('jetform-media-gallery-general');
+                            } else {
+                                do_settings_sections('jetform-media-gallery-fields');
                             }
-                        } else {
-                            // Mantener los valores de configuración general
-                            $general_fields = ['image_width', 'image_height', 'use_theme_buttons', 'remove_button_position', 'remove_button_bg', 'remove_button_color'];
-                            foreach ($general_fields as $field) {
-                                if (isset($options[$field])) {
-                                    printf(
-                                        '<input type="hidden" name="%s[%s]" value="%s">',
-                                        esc_attr($this->option_name),
-                                        esc_attr($field),
-                                        esc_attr($options[$field])
-                                    );
-                                }
-                            }
-                        }
-                        
-                        submit_button();
-                        ?>
-                    </form>
+                            
+                            submit_button();
+                            ?>
+                        </form>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Sidebar -->
@@ -620,6 +625,66 @@ class JetForm_Media_Gallery_Admin {
         <?php
     }
     
+    public function render_debug_section() {
+        echo '<p>' . __('Configura las opciones de depuración y logging del plugin.', 'jetform-media-gallery') . '</p>';
+        
+        // Mostrar información sobre los logs actuales
+        $log_file = WP_CONTENT_DIR . '/debug-media-gallery.log';
+        if (file_exists($log_file)) {
+            $size = size_format(filesize($log_file), 2);
+            echo '<p>' . sprintf(__('Archivo de log actual: %s', 'jetform-media-gallery'), $size) . '</p>';
+        }
+    }
+
+    public function render_debug_mode_field() {
+        $options = get_option('jetform_media_gallery_settings');
+        $debug_mode = isset($options['debug_mode']) ? $options['debug_mode'] : false;
+        ?>
+        <label>
+            <input type="checkbox" 
+                   name="jetform_media_gallery_settings[debug_mode]" 
+                   value="1" 
+                   <?php checked($debug_mode, true); ?>>
+            <?php _e('Activar modo de depuración', 'jetform-media-gallery'); ?>
+        </label>
+        <p class="description">
+            <?php _e('Guarda información detallada sobre el procesamiento de imágenes en el archivo de log.', 'jetform-media-gallery'); ?>
+        </p>
+        <?php
+    }
+
+    public function render_max_log_size_field() {
+        $options = get_option('jetform_media_gallery_settings');
+        $max_size = isset($options['max_log_size']) ? absint($options['max_log_size']) : 5;
+        ?>
+        <input type="number" 
+               name="jetform_media_gallery_settings[max_log_size]" 
+               value="<?php echo esc_attr($max_size); ?>"
+               min="1"
+               max="100"
+               step="1">
+        <p class="description">
+            <?php _e('Tamaño máximo en megabytes (MB) antes de rotar el archivo de log.', 'jetform-media-gallery'); ?>
+        </p>
+        <?php
+    }
+
+    public function render_max_log_files_field() {
+        $options = get_option('jetform_media_gallery_settings');
+        $max_files = isset($options['max_log_files']) ? absint($options['max_log_files']) : 5;
+        ?>
+        <input type="number" 
+               name="jetform_media_gallery_settings[max_log_files]" 
+               value="<?php echo esc_attr($max_files); ?>"
+               min="1"
+               max="20"
+               step="1">
+        <p class="description">
+            <?php _e('Número máximo de archivos de log a mantener durante la rotación.', 'jetform-media-gallery'); ?>
+        </p>
+        <?php
+    }
+    
     public function sanitize_settings($input) {
         $sanitized = [];
         
@@ -712,6 +777,167 @@ class JetForm_Media_Gallery_Admin {
             }
         }
         
+        // Sanitizar opciones de depuración
+        $sanitized['debug_mode'] = isset($input['debug_mode']) ? true : false;
+        $sanitized['max_log_size'] = absint($input['max_log_size']);
+        if ($sanitized['max_log_size'] < 1) $sanitized['max_log_size'] = 1;
+        if ($sanitized['max_log_size'] > 100) $sanitized['max_log_size'] = 100;
+
+        $sanitized['max_log_files'] = absint($input['max_log_files']);
+        if ($sanitized['max_log_files'] < 1) $sanitized['max_log_files'] = 1;
+        if ($sanitized['max_log_files'] > 20) $sanitized['max_log_files'] = 20;
+
         return $sanitized;
+    }
+
+    /**
+     * Manejar acciones de logs
+     */
+    public function handle_log_actions() {
+        if (!current_user_can('manage_options') || !isset($_GET['page']) || $_GET['page'] !== 'jetform-media-gallery') {
+            return;
+        }
+
+        if (isset($_POST['action'])) {
+            check_admin_referer('jetform_media_gallery_logs');
+
+            switch ($_POST['action']) {
+                case 'clear_logs':
+                    $this->clear_logs();
+                    break;
+                case 'toggle_debug':
+                    $this->toggle_debug_mode();
+                    break;
+            }
+
+            wp_redirect(add_query_arg(['page' => 'jetform-media-gallery', 'tab' => 'logs'], admin_url('options-general.php')));
+            exit;
+        }
+    }
+
+    /**
+     * Limpiar logs
+     */
+    private function clear_logs() {
+        if (file_exists($this->log_file)) {
+            unlink($this->log_file);
+        }
+        
+        // También eliminar archivos rotados
+        for ($i = 1; $i <= 20; $i++) {
+            $rotated_file = $this->log_file . '.' . $i;
+            if (file_exists($rotated_file)) {
+                unlink($rotated_file);
+            }
+        }
+        
+        add_settings_error(
+            'jetform_media_gallery_logs',
+            'logs_cleared',
+            __('Los logs han sido eliminados correctamente.', 'jetform-media-gallery'),
+            'success'
+        );
+    }
+
+    /**
+     * Alternar modo debug
+     */
+    private function toggle_debug_mode() {
+        $options = get_option($this->option_name);
+        $options['debug_mode'] = !isset($options['debug_mode']) || !$options['debug_mode'];
+        update_option($this->option_name, $options);
+        
+        $status = $options['debug_mode'] ? 'activado' : 'desactivado';
+        add_settings_error(
+            'jetform_media_gallery_logs',
+            'debug_toggled',
+            sprintf(__('El modo debug ha sido %s.', 'jetform-media-gallery'), $status),
+            'success'
+        );
+    }
+
+    /**
+     * Renderizar página de logs
+     */
+    private function render_logs_page() {
+        $options = get_option($this->option_name);
+        $debug_enabled = isset($options['debug_mode']) && $options['debug_mode'];
+        ?>
+        <div class="logs-container">
+            <div class="log-controls" style="margin-bottom: 20px; padding: 15px; background: #fff; border: 1px solid #ccd0d4; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
+                <form method="post" style="display: flex; gap: 10px; align-items: center;">
+                    <?php wp_nonce_field('jetform_media_gallery_logs'); ?>
+                    
+                    <button type="submit" name="action" value="toggle_debug" class="button <?php echo $debug_enabled ? 'button-primary' : 'button-secondary'; ?>">
+                        <?php echo $debug_enabled ? __('Desactivar Debug', 'jetform-media-gallery') : __('Activar Debug', 'jetform-media-gallery'); ?>
+                    </button>
+                    
+                    <button type="submit" name="action" value="clear_logs" class="button button-secondary" 
+                            onclick="return confirm('<?php _e('¿Estás seguro de que deseas eliminar todos los logs?', 'jetform-media-gallery'); ?>');">
+                        <?php _e('Limpiar Logs', 'jetform-media-gallery'); ?>
+                    </button>
+                    
+                    <?php if (file_exists($this->log_file)): ?>
+                        <span class="log-info">
+                            <?php 
+                            $size = size_format(filesize($this->log_file), 2);
+                            printf(__('Tamaño actual del log: %s', 'jetform-media-gallery'), $size); 
+                            ?>
+                        </span>
+                    <?php endif; ?>
+                </form>
+            </div>
+
+            <div class="log-viewer" style="background: #fff; border: 1px solid #ccd0d4; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
+                <div class="log-content" style="padding: 15px; max-height: 500px; overflow-y: auto; font-family: monospace;">
+                    <?php
+                    if (file_exists($this->log_file)) {
+                        $logs = file_get_contents($this->log_file);
+                        if (!empty($logs)) {
+                            // Dividir en líneas y mostrar las últimas 1000 líneas
+                            $lines = array_filter(explode("\n", $logs));
+                            $lines = array_slice($lines, -1000);
+                            
+                            foreach ($lines as $line) {
+                                // Detectar y colorear diferentes tipos de mensajes
+                                $class = '';
+                                if (stripos($line, 'error') !== false) {
+                                    $class = 'color: #dc3232;'; // Rojo para errores
+                                } elseif (stripos($line, 'success') !== false || stripos($line, 'éxito') !== false) {
+                                    $class = 'color: #46b450;'; // Verde para éxitos
+                                } elseif (stripos($line, 'warning') !== false || stripos($line, 'advertencia') !== false) {
+                                    $class = 'color: #ffb900;'; // Amarillo para advertencias
+                                }
+                                
+                                printf('<div style="%s">%s</div>', $class, esc_html($line));
+                            }
+                        } else {
+                            echo '<p>' . __('El archivo de log está vacío.', 'jetform-media-gallery') . '</p>';
+                        }
+                    } else {
+                        echo '<p>' . __('No hay archivos de log disponibles.', 'jetform-media-gallery') . '</p>';
+                    }
+                    ?>
+                </div>
+            </div>
+
+            <?php if (!$debug_enabled): ?>
+            <div class="debug-notice" style="margin-top: 15px; padding: 10px; background: #fff8e5; border-left: 4px solid #ffb900;">
+                <p><?php _e('El modo debug está desactivado. Actívalo para registrar información detallada sobre el procesamiento de imágenes.', 'jetform-media-gallery'); ?></p>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <style>
+            .log-content div {
+                padding: 2px 0;
+                border-bottom: 1px solid #f0f0f0;
+            }
+            .log-info {
+                color: #666;
+                font-style: italic;
+            }
+        </style>
+        <?php
     }
 } 
