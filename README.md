@@ -42,14 +42,8 @@ Añade el shortcode en tu formulario de JetFormBuilder:
 
 ### Nombres de Campos
 
-El plugin espera estos nombres de campos en el formulario:
-- `imagen_destacada`: Para la imagen destacada
-- `galeria`: Para las imágenes de galería
+El plugin espera los nombres de campos en el formulario de acuerdo a los ajustes en la administración del plugin
 
-## Almacenamiento
-
-- Imagen destacada: Se guarda usando `set_post_thumbnail()`
-- Galería: Se guarda en el meta field `ad_gallery`
 
 ## Depuración
 
@@ -59,6 +53,9 @@ Los logs se guardan en `wp-content/debug-media-gallery.log` e incluyen:
 - Verificación de datos
 
 ## Changelog
+
+### 1.0.2
+- Se agrega sistema de administración para el Debug de procesos en el backend
 
 ### 1.0.1
 - Corregido el procesamiento de campos del formulario
