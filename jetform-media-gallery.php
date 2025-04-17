@@ -2,7 +2,7 @@
 /**
  * Plugin Name: JetFormBuilder Media Gallery Field
  * Description: Agrega un campo de galería de medios para JetFormBuilder que permite seleccionar imagen destacada y galería para el CPT "singlecar"
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Tu Nombre
  * Text Domain: jetform-media-gallery
  */
@@ -15,28 +15,46 @@
  * - Seleccionar una imagen destacada para el post
  * - Seleccionar múltiples imágenes para una galería
  * 
- * La imagen destacada se establece automáticamente con la función set_post_thumbnail()
- * Las imágenes de la galería se guardan en el campo meta "ad_gallery" del CPT "singlecar"
+ * CAMPOS DEL FORMULARIO:
+ * ---------------------
+ * El plugin espera los siguientes nombres de campos en el formulario:
+ * - imagen_destacada: Para la imagen destacada del post
+ * - galeria: Para las imágenes de la galería
  * 
  * MÉTODO DE IMPLEMENTACIÓN:
- * 
+ * ------------------------
  * En tu formulario de JetFormBuilder, añade un campo HTML personalizado
  * y dentro agrega el siguiente shortcode:
  * 
- * [media_gallery_field name="media_gallery" label="Seleccionar imágenes para el anuncio" required="1"]
+ * [media_gallery_field field="nombre_campo" required="1"]
  * 
  * Parámetros disponibles:
- * - name: (opcional) Nombre base del campo, por defecto 'media_gallery'
- * - label: (opcional) Etiqueta del campo, por defecto 'Seleccionar imágenes'
+ * - field: (requerido) Nombre del campo configurado en el panel de administración
  * - required: (opcional) Si es requerido, usar '1' para requerido, '0' para opcional
  * 
- * Las entradas de datos generadas serán:
- * - {name}_featured: ID de la imagen destacada
- * - {name}_gallery: IDs de las imágenes de galería separados por comas
+ * ALMACENAMIENTO:
+ * --------------
+ * - La imagen destacada se establece usando set_post_thumbnail()
+ * - Las imágenes de la galería se guardan en el campo meta "ad_gallery"
  * 
  * DEPURACIÓN:
- * Para activar el modo de depuración, añade ?jfb_debug=1 a la URL del formulario.
- * Los logs se guardarán en wp-content/uploads/jfb-logs/
+ * ----------
+ * Los logs se guardan en wp-content/debug-media-gallery.log
+ * Incluyen información detallada sobre:
+ * - Datos recibidos del formulario
+ * - Proceso de guardado de imágenes
+ * - Verificación de datos guardados
+ * 
+ * CHANGELOG:
+ * ---------
+ * 1.0.1
+ * - Corregido el procesamiento de campos del formulario
+ * - Mejorado el sistema de logging
+ * - Añadida compatibilidad con diferentes tipos de post
+ * - Optimizado el proceso de guardado de imágenes
+ * 
+ * 1.0.0
+ * - Versión inicial del plugin
  */
 
 // No ejecutar directamente
@@ -45,9 +63,18 @@ if (!defined('ABSPATH')) {
 }
 
 // Definir constantes
-define('JFB_MEDIA_GALLERY_VERSION', '1.0.0');
+define('JFB_MEDIA_GALLERY_VERSION', '1.0.1');
 define('JFB_MEDIA_GALLERY_PATH', plugin_dir_path(__FILE__));
 define('JFB_MEDIA_GALLERY_URL', plugin_dir_url(__FILE__));
+
+// Cargar traducciones
+add_action('plugins_loaded', function() {
+    load_plugin_textdomain(
+        'jetform-media-gallery',
+        false,
+        dirname(plugin_basename(__FILE__)) . '/languages'
+    );
+});
 
 // Incluir el archivo de administración
 require_once plugin_dir_path(__FILE__) . 'admin/settings.php';
@@ -139,72 +166,104 @@ class JetForm_Media_Gallery_Field {
      */
     public function render_shortcode($atts) {
         $atts = shortcode_atts([
-            'name' => 'media_gallery',
-            'label' => 'Seleccionar imágenes',
+            'field' => '',
             'required' => '0',
         ], $atts, 'media_gallery_field');
         
-        $name = sanitize_key($atts['name']);
-        $label = sanitize_text_field($atts['label']);
-        $required = filter_var($atts['required'], FILTER_VALIDATE_BOOLEAN) ? 'required' : '';
-        $field_id = 'field_' . $name;
+        // Validar que se especificó un campo
+        if (empty($atts['field'])) {
+            return '<p style="color: red;">Error: Debe especificar un campo usando el atributo "field"</p>';
+        }
         
-        // Obtener configuración del título
-        $title_tag = $this->settings['title_tag'];
-        $title_classes = $this->settings['title_classes'];
+        // Obtener la configuración de campos
+        $fields = isset($this->settings['image_fields']) ? $this->settings['image_fields'] : [];
+        
+        // Buscar el campo especificado
+        $field_config = null;
+        foreach ($fields as $field) {
+            if ($field['name'] === $atts['field']) {
+                $field_config = $field;
+                break;
+            }
+        }
+        
+        // Validar que el campo existe
+        if (!$field_config) {
+            return '<p style="color: red;">Error: El campo "' . esc_html($atts['field']) . '" no está configurado</p>';
+        }
+        
+        // Determinar si el campo es requerido
+        $required = filter_var($atts['required'], FILTER_VALIDATE_BOOLEAN) || !empty($field_config['required']);
+        $required_attr = $required ? 'required' : '';
         
         ob_start();
         ?>
         <div class="jet-form-builder__field media-gallery-field">
-            <label for="<?php echo esc_attr($field_id); ?>" class="jet-form-builder__label">
-                <?php echo esc_html($label); ?>
+            <label class="jet-form-builder__label">
+                <?php echo esc_html($field_config['label']); ?>
                 <?php if ($required) : ?>
                     <span class="jet-form-builder__required">*</span>
                 <?php endif; ?>
             </label>
             
             <div class="media-gallery-container">
-                <!-- Contenedor para la imagen destacada -->
-                <div class="featured-image-container">
-                    <<?php echo esc_attr($title_tag); ?> class="section-title <?php echo esc_attr($title_classes); ?>">
-                        Imagen destacada
-                    </<?php echo esc_attr($title_tag); ?>>
-                    <div class="image-controls">
-                        <?php if ($this->settings['select_button_order'] === 'before') : ?>
-                            <button type="button" class="button upload-featured-image" data-field="<?php echo esc_attr($name); ?>">Seleccionar imagen destacada</button>
-                        <?php endif; ?>
-                        <div id="featured-image-preview-<?php echo esc_attr($name); ?>" class="image-preview">
-                            <div class="image-overlay"></div>
-                            <button type="button" class="remove-featured-image" style="display: none;">×</button>
+                <?php if ($field_config['type'] === 'single') : ?>
+                    <!-- Campo de imagen única -->
+                    <div class="featured-image-container">
+                        <div class="image-controls">
+                            <?php if ($this->settings['select_button_order'] === 'before') : ?>
+                                <button type="button" class="button upload-featured-image" data-field="<?php echo esc_attr($field_config['name']); ?>">
+                                    Seleccionar imagen
+                                </button>
+                            <?php endif; ?>
+                            
+                            <div id="featured-image-preview-<?php echo esc_attr($field_config['name']); ?>" class="image-preview">
+                                <div class="image-overlay"></div>
+                                <button type="button" class="remove-featured-image" style="display: none;">×</button>
+                            </div>
+                            
+                            <?php if ($this->settings['select_button_order'] === 'after') : ?>
+                                <button type="button" class="button upload-featured-image" data-field="<?php echo esc_attr($field_config['name']); ?>">
+                                    Seleccionar imagen
+                                </button>
+                            <?php endif; ?>
                         </div>
-                        <?php if ($this->settings['select_button_order'] === 'after') : ?>
-                            <button type="button" class="button upload-featured-image" data-field="<?php echo esc_attr($name); ?>">Seleccionar imagen destacada</button>
-                        <?php endif; ?>
+                        <input type="hidden" 
+                               name="<?php echo esc_attr($field_config['name']); ?>" 
+                               id="featured-image-input-<?php echo esc_attr($field_config['name']); ?>" 
+                               class="jet-form-builder__field"
+                               data-meta-type="<?php echo esc_attr($field_config['meta_type']); ?>"
+                               data-meta-key="<?php echo esc_attr($field_config['meta_key']); ?>"
+                               <?php echo $required_attr; ?>>
                     </div>
-                    <input type="hidden" name="<?php echo esc_attr($name . '_featured'); ?>" id="featured-image-input-<?php echo esc_attr($name); ?>" class="jet-form-builder__field" <?php echo $required; ?>>
-                </div>
-                
-                <!-- Contenedor para la galería -->
-                <div class="gallery-container">
-                    <<?php echo esc_attr($title_tag); ?> class="section-title <?php echo esc_attr($title_classes); ?>">
-                        Galería de imágenes
-                    </<?php echo esc_attr($title_tag); ?>>
-                    <div class="gallery-controls">
-                        <?php if ($this->settings['select_button_order'] === 'before') : ?>
-                            <button type="button" class="button upload-gallery-images" data-field="<?php echo esc_attr($name); ?>">Seleccionar imágenes para galería</button>
-                        <?php endif; ?>
-                        <div id="gallery-images-preview-<?php echo esc_attr($name); ?>" class="images-preview"></div>
-                        <?php if ($this->settings['select_button_order'] === 'after') : ?>
-                            <button type="button" class="button upload-gallery-images" data-field="<?php echo esc_attr($name); ?>">Seleccionar imágenes para galería</button>
-                        <?php endif; ?>
+                <?php else : ?>
+                    <!-- Campo de galería -->
+                    <div class="gallery-container">
+                        <div class="gallery-controls">
+                            <?php if ($this->settings['select_button_order'] === 'before') : ?>
+                                <button type="button" class="button upload-gallery-images" data-field="<?php echo esc_attr($field_config['name']); ?>">
+                                    Seleccionar imágenes
+                                </button>
+                            <?php endif; ?>
+                            
+                            <div id="gallery-images-preview-<?php echo esc_attr($field_config['name']); ?>" class="images-preview"></div>
+                            
+                            <?php if ($this->settings['select_button_order'] === 'after') : ?>
+                                <button type="button" class="button upload-gallery-images" data-field="<?php echo esc_attr($field_config['name']); ?>">
+                                    Seleccionar imágenes
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                        <input type="hidden" 
+                               name="<?php echo esc_attr($field_config['name']); ?>" 
+                               id="gallery-images-input-<?php echo esc_attr($field_config['name']); ?>" 
+                               class="jet-form-builder__field"
+                               data-meta-type="<?php echo esc_attr($field_config['meta_type']); ?>"
+                               data-meta-key="<?php echo esc_attr($field_config['meta_key']); ?>"
+                               <?php echo $required_attr; ?>>
                     </div>
-                    <input type="hidden" name="<?php echo esc_attr($name . '_gallery'); ?>" id="gallery-images-input-<?php echo esc_attr($name); ?>" class="jet-form-builder__field">
-                </div>
+                <?php endif; ?>
             </div>
-            
-            <!-- Campo oculto para trackear el envío -->
-            <input type="hidden" name="jfb_media_gallery_active" value="1">
-            <input type="hidden" name="has_media_gallery" value="1">
         </div>
         
         <style>
@@ -230,15 +289,11 @@ class JetForm_Media_Gallery_Field {
         // Obtener los datos del formulario
         $form_data = isset($handler->form_data) ? $handler->form_data : [];
         
-        // Asegurarnos de que los campos de imágenes estén incluidos
-        if (isset($_POST['media_gallery_featured'])) {
-            $form_data['media_gallery_featured'] = $_POST['media_gallery_featured'];
+        // Si form_data está vacío, intentar obtener de $_POST
+        if (empty($form_data)) {
+            $form_data = $_POST;
+            $this->log_debug("Usando datos de POST: " . print_r($form_data, true));
         }
-        if (isset($_POST['media_gallery_gallery'])) {
-            $form_data['media_gallery_gallery'] = $_POST['media_gallery_gallery'];
-        }
-        
-        $this->log_debug("Datos del formulario procesados: " . print_r($form_data, true));
         
         // Obtener el ID del post
         $post_id = $this->find_post_id($handler, $actions, $form_data);
@@ -250,31 +305,97 @@ class JetForm_Media_Gallery_Field {
         
         $this->log_debug("ID de post encontrado: $post_id");
         
-        // Procesar la imagen destacada
-        if (!empty($form_data['media_gallery_featured'])) {
-            $this->log_debug("Guardando imagen destacada: " . $form_data['media_gallery_featured']);
-            set_post_thumbnail($post_id, intval($form_data['media_gallery_featured']));
+        // Procesar imagen destacada
+        if (isset($form_data['imagen_destacada']) && !empty($form_data['imagen_destacada'])) {
+            $featured_id = intval($form_data['imagen_destacada']);
+            $this->log_debug("Estableciendo imagen destacada: $featured_id");
+            set_post_thumbnail($post_id, $featured_id);
+            
+            // Verificar que se guardó correctamente
+            $saved_thumbnail = get_post_thumbnail_id($post_id);
+            $this->log_debug("Imagen destacada guardada: $saved_thumbnail");
         }
         
-        // Procesar la galería
-        if (!empty($form_data['media_gallery_gallery'])) {
-            $gallery_ids = explode(',', $form_data['media_gallery_gallery']);
+        // Procesar galería
+        if (isset($form_data['galeria']) && !empty($form_data['galeria'])) {
+            $gallery_value = $form_data['galeria'];
+            $gallery_ids = is_array($gallery_value) ? $gallery_value : explode(',', $gallery_value);
             $gallery_ids = array_map('intval', array_filter($gallery_ids));
             
-            if (!empty($gallery_ids)) {
-                $this->log_debug("Guardando galería: " . implode(', ', $gallery_ids));
-                update_post_meta($post_id, 'ad_gallery', $gallery_ids);
+            $this->log_debug("Procesando galería con IDs: " . implode(', ', $gallery_ids));
+            
+            // Eliminar galería existente
+            delete_post_meta($post_id, 'ad_gallery');
+            
+            // Guardar nueva galería
+            update_post_meta($post_id, 'ad_gallery', $gallery_ids);
+            
+            // Verificar que se guardó correctamente
+            $saved_gallery = get_post_meta($post_id, 'ad_gallery', true);
+            $this->log_debug("Galería guardada: " . print_r($saved_gallery, true));
+        }
+        
+        // Forzar limpieza de caché
+        clean_post_cache($post_id);
+        wp_cache_delete($post_id, 'posts');
+        wp_cache_delete($post_id, 'post_meta');
+        
+        $this->log_debug("=== FIN PROCESS FORM SUBMISSION ===");
+    }
+    
+    /**
+     * Encontrar el ID del post
+     */
+    private function find_post_id($handler, $actions = null, $form_data = []) {
+        $post_id = null;
+        
+        // 1. Buscar en los datos del formulario
+        if (isset($form_data['post_id'])) {
+            $post_id = absint($form_data['post_id']);
+            $this->log_debug("Post ID encontrado en form_data[post_id]: $post_id");
+        }
+        
+        // 2. Buscar en las acciones de JetFormBuilder
+        if (!$post_id && is_array($actions)) {
+            foreach ($actions as $action) {
+                if (isset($action['type']) && $action['type'] === 'insert_post' && isset($action['post_id'])) {
+                    $post_id = absint($action['post_id']);
+                    $this->log_debug("Post ID encontrado en acciones: $post_id");
+                    break;
+                }
             }
         }
         
-        // Verificación final
-        $thumbnail_id = get_post_thumbnail_id($post_id);
-        $gallery = get_post_meta($post_id, 'ad_gallery', true);
+        // 3. Buscar en los datos de respuesta del handler
+        if (!$post_id && isset($handler->action_handler) && isset($handler->action_handler->response_data)) {
+            $response_data = $handler->action_handler->response_data;
+            
+            if (isset($response_data['inserted_post_id'])) {
+                $post_id = absint($response_data['inserted_post_id']);
+                $this->log_debug("Post ID encontrado en response_data[inserted_post_id]: $post_id");
+            } elseif (isset($response_data['post_id'])) {
+                $post_id = absint($response_data['post_id']);
+                $this->log_debug("Post ID encontrado en response_data[post_id]: $post_id");
+            }
+        }
         
-        $this->log_debug("=== VERIFICACIÓN FINAL ===");
-        $this->log_debug("Thumbnail ID guardado: " . ($thumbnail_id ? $thumbnail_id : "no encontrado"));
-        $this->log_debug("Galería guardada: " . (is_array($gallery) ? implode(', ', $gallery) : "no encontrada"));
-        $this->log_debug("=== FIN PROCESS FORM SUBMISSION ===");
+        // 4. Buscar el último post del tipo correcto
+        if (!$post_id) {
+            $post_id = $this->find_last_post();
+            if ($post_id) {
+                $this->log_debug("Post ID encontrado buscando el último post: $post_id");
+            }
+        }
+        
+        // Verificar que el post existe
+        if ($post_id) {
+            $post = get_post($post_id);
+            if ($post) {
+                return $post_id;
+            }
+        }
+        
+        return null;
     }
     
     /**
@@ -485,8 +606,8 @@ class JetForm_Media_Gallery_Field {
         $gallery = get_post_meta($post_id, 'ad_gallery', true);
         
         $this->log_debug("=== VERIFICACIÓN FINAL ===");
-        $this->log_debug("Thumbnail ID: " . ($thumbnail_id ? $thumbnail_id : "no encontrado"));
-        $this->log_debug("Galería: " . (is_array($gallery) ? implode(', ', $gallery) : "no encontrada"));
+        $this->log_debug("Thumbnail ID guardado: " . ($thumbnail_id ? $thumbnail_id : "no encontrado"));
+        $this->log_debug("Galería guardada: " . (is_array($gallery) ? implode(', ', $gallery) : "no encontrada"));
         
         // Forzar limpieza de caché
         clean_post_cache($post_id);
@@ -496,58 +617,6 @@ class JetForm_Media_Gallery_Field {
         $this->log_debug("=== FIN DE GUARDADO DE IMÁGENES ===");
         
         return $success;
-    }
-    
-    /**
-     * Encontrar el ID del post a partir de varias fuentes
-     */
-    private function find_post_id($handler = null, $actions = null, $form_data = []) {
-        $post_id = null;
-        
-        // Método 1: Buscar en acciones
-        if (is_array($actions)) {
-            foreach ($actions as $action) {
-                if (isset($action['type']) && $action['type'] === 'insert_post' && isset($action['post_id'])) {
-                    $post_id = $action['post_id'];
-                    $this->log_debug("Post ID encontrado en acciones: $post_id");
-                    break;
-                }
-            }
-        }
-        
-        // Método 2: Buscar en datos de respuesta del handler
-        if (!$post_id && isset($handler) && isset($handler->action_handler) && isset($handler->action_handler->response_data)) {
-            $response_data = $handler->action_handler->response_data;
-            
-            if (isset($response_data['inserted_post_id'])) {
-                $post_id = $response_data['inserted_post_id'];
-                $this->log_debug("Post ID encontrado en response_data (inserted_post_id): $post_id");
-            } elseif (isset($response_data['post_id'])) {
-                $post_id = $response_data['post_id'];
-                $this->log_debug("Post ID encontrado en response_data (post_id): $post_id");
-            }
-        }
-        
-        // Método 3: Buscar en form_data
-        if (!$post_id && is_array($form_data)) {
-            if (isset($form_data['inserted_post_id'])) {
-                $post_id = $form_data['inserted_post_id'];
-                $this->log_debug("Post ID encontrado en form_data (inserted_post_id): $post_id");
-            } elseif (isset($form_data['post_id'])) {
-                $post_id = $form_data['post_id'];
-                $this->log_debug("Post ID encontrado en form_data (post_id): $post_id");
-            }
-        }
-        
-        // Método 4: Buscar el último post insertado
-        if (!$post_id) {
-            $post_id = $this->find_last_post();
-            if ($post_id) {
-                $this->log_debug("Post ID encontrado buscando el último post: $post_id");
-            }
-        }
-        
-        return $post_id;
     }
     
     /**

@@ -1,0 +1,36 @@
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Archivos de dependencias
+/node_modules/
+/vendor/
+
+# Archivos de compilación
+*.min.js
+*.min.css
+*.map
+
+# Archivos de WordPress
+*.log
+wp-config.php
+wp-content/advanced-cache.php
+wp-content/backup-db/
+wp-content/backups/
+wp-content/blogs.dir/
+wp-content/cache/
+wp-content/upgrade/
+wp-content/uploads/
+wp-content/wp-cache-config.php
+wp-content/plugins/hello.php
+
+# Archivos temporales
+*.tmp
+*.bak
+*.swp 

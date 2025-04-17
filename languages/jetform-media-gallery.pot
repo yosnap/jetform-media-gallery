@@ -1,0 +1,144 @@
+# Copyright (C) 2024 JetForm Media Gallery
+msgid ""
+msgstr ""
+"Project-Id-Version: JetForm Media Gallery 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/jetform-media-gallery\n"
+"POT-Creation-Date: 2024-03-21\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2024-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+
+#: admin/settings.php:XX
+msgid "Media Gallery Settings"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Image Size"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Button Style"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Remove Button Position"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Remove Button Colors"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Use Theme Styles"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Width"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Height"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Center"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Top Right"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Top Left"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Background Color"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Text Color"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "About JFBuilder Media Fields"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "This plugin adds media field capabilities to JetFormBuilder, allowing you to handle featured images and galleries in your forms."
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "View Documentation on GitHub"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "General Settings"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Fields Configuration"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Save Changes"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Shortcode Generator"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Select a field to generate its shortcode:"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Select a field"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Your shortcode:"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Copy Shortcode"
+msgstr ""
+
+#: admin/settings.php:XX
+msgid "Shortcode copied to clipboard!"
+msgstr ""
+
+#: includes/class-media-field.php:XX
+msgid "Add Image"
+msgstr ""
+
+#: includes/class-media-field.php:XX
+msgid "Remove Image"
+msgstr ""
+
+#: includes/class-media-field.php:XX
+msgid "Add Images"
+msgstr ""
+
+#: includes/class-media-field.php:XX
+msgid "Remove All Images"
+msgstr ""
+
+#: includes/class-media-field.php:XX
+msgid "Select Featured Image"
+msgstr ""
+
+#: includes/class-media-field.php:XX
+msgid "Use this image"
+msgstr ""
+
+#: includes/class-media-field.php:XX
+msgid "Select Gallery Images"
+msgstr ""
+
+#: includes/class-media-field.php:XX
+msgid "Add to Gallery"
+msgstr "" 

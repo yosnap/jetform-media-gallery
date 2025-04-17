@@ -1,0 +1,145 @@
+# Copyright (C) 2024 JetForm Media Gallery
+msgid ""
+msgstr ""
+"Project-Id-Version: JetForm Media Gallery 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/jetform-media-gallery\n"
+"POT-Creation-Date: 2024-03-21\n"
+"PO-Revision-Date: 2024-03-21 12:00+0100\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: es_ES\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+
+#: admin/settings.php:XX
+msgid "Media Gallery Settings"
+msgstr "Ajustes de Galería Multimedia"
+
+#: admin/settings.php:XX
+msgid "Image Size"
+msgstr "Tamaño de Imagen"
+
+#: admin/settings.php:XX
+msgid "Button Style"
+msgstr "Estilo del Botón"
+
+#: admin/settings.php:XX
+msgid "Remove Button Position"
+msgstr "Posición del Botón Eliminar"
+
+#: admin/settings.php:XX
+msgid "Remove Button Colors"
+msgstr "Colores del Botón Eliminar"
+
+#: admin/settings.php:XX
+msgid "Use Theme Styles"
+msgstr "Usar Estilos del Tema"
+
+#: admin/settings.php:XX
+msgid "Width"
+msgstr "Ancho"
+
+#: admin/settings.php:XX
+msgid "Height"
+msgstr "Alto"
+
+#: admin/settings.php:XX
+msgid "Center"
+msgstr "Centro"
+
+#: admin/settings.php:XX
+msgid "Top Right"
+msgstr "Superior Derecha"
+
+#: admin/settings.php:XX
+msgid "Top Left"
+msgstr "Superior Izquierda"
+
+#: admin/settings.php:XX
+msgid "Background Color"
+msgstr "Color de Fondo"
+
+#: admin/settings.php:XX
+msgid "Text Color"
+msgstr "Color del Texto"
+
+#: admin/settings.php:XX
+msgid "About JFBuilder Media Fields"
+msgstr "Acerca de JFBuilder Media Fields"
+
+#: admin/settings.php:XX
+msgid "This plugin adds media field capabilities to JetFormBuilder, allowing you to handle featured images and galleries in your forms."
+msgstr "Este plugin agrega capacidades de campos multimedia a JetFormBuilder, permitiéndote manejar imágenes destacadas y galerías en tus formularios."
+
+#: admin/settings.php:XX
+msgid "View Documentation on GitHub"
+msgstr "Ver Documentación en GitHub"
+
+#: admin/settings.php:XX
+msgid "General Settings"
+msgstr "Ajustes Generales"
+
+#: admin/settings.php:XX
+msgid "Fields Configuration"
+msgstr "Configuración de Campos"
+
+#: admin/settings.php:XX
+msgid "Save Changes"
+msgstr "Guardar Cambios"
+
+#: admin/settings.php:XX
+msgid "Shortcode Generator"
+msgstr "Generador de Shortcode"
+
+#: admin/settings.php:XX
+msgid "Select a field to generate its shortcode:"
+msgstr "Selecciona un campo para generar su shortcode:"
+
+#: admin/settings.php:XX
+msgid "Select a field"
+msgstr "Seleccionar un campo"
+
+#: admin/settings.php:XX
+msgid "Your shortcode:"
+msgstr "Tu shortcode:"
+
+#: admin/settings.php:XX
+msgid "Copy Shortcode"
+msgstr "Copiar Shortcode"
+
+#: admin/settings.php:XX
+msgid "Shortcode copied to clipboard!"
+msgstr "¡Shortcode copiado al portapapeles!"
+
+#: includes/class-media-field.php:XX
+msgid "Add Image"
+msgstr "Añadir Imagen"
+
+#: includes/class-media-field.php:XX
+msgid "Remove Image"
+msgstr "Eliminar Imagen"
+
+#: includes/class-media-field.php:XX
+msgid "Add Images"
+msgstr "Añadir Imágenes"
+
+#: includes/class-media-field.php:XX
+msgid "Remove All Images"
+msgstr "Eliminar Todas las Imágenes"
+
+#: includes/class-media-field.php:XX
+msgid "Select Featured Image"
+msgstr "Seleccionar Imagen Destacada"
+
+#: includes/class-media-field.php:XX
+msgid "Use this image"
+msgstr "Usar esta imagen"
+
+#: includes/class-media-field.php:XX
+msgid "Select Gallery Images"
+msgstr "Seleccionar Imágenes para Galería"
+
+#: includes/class-media-field.php:XX
+msgid "Add to Gallery"
+msgstr "Agregar a Galería" 
