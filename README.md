@@ -58,7 +58,7 @@ Esta funcionalidad es compatible con:
 ### Almacenamiento
 
 - La imagen destacada se establece usando `set_post_thumbnail()`
-- Las imágenes de la galería se guardan en el campo meta "ad_gallery"
+- Las imágenes de la galería se guardan en el campo meta configurado en el panel de administración
 
 ## Depuración
 
@@ -98,6 +98,13 @@ El plugin ofrece múltiples opciones de personalización a través del panel de 
 - Comportamiento y orden de los componentes
 
 ## Changelog
+
+### 1.0.4
+- Mejorada la integración con JetFormBuilder utilizando hooks específicos para inserción y actualización de posts
+- Añadido soporte para diferentes formatos de datos de galería (string, array, JSON)
+- Mejorada la detección y extracción de IDs de post desde diferentes contextos
+- Optimizado el proceso de guardado de imágenes para mayor fiabilidad
+- Añadido registro de diagnóstico más detallado para facilitar la depuración
 
 ### 1.0.3
 - Añadido soporte para carga automática de imágenes en modo edición

@@ -21,7 +21,7 @@ class JetForm_Media_Gallery_Main {
     /**
      * Version del plugin
      */
-    private $version = '1.0.3';
+    private $version = '1.0.4';
     
     /**
      * Configuraciones del plugin
@@ -88,6 +88,12 @@ class JetForm_Media_Gallery_Main {
             'button_border_radius' => 4,
             'button_padding' => '10px 16px',
         ]);
+        
+        // Asegurarnos de que tenemos un array de image_fields
+        if (!isset($this->settings['image_fields']) || !is_array($this->settings['image_fields'])) {
+            $this->settings['image_fields'] = [];
+            update_option('jetform_media_gallery_settings', $this->settings);
+        }
     }
     
     /**
@@ -130,6 +136,10 @@ class JetForm_Media_Gallery_Main {
         add_action('jet-form-builder/submit-form/after', [$this->process, 'save_form_images'], 999, 2);
         add_action('jet-form-builder/actions/after-actions', [$this->process, 'save_after_actions'], 999, 2);
         
+        // Hooks específicos para capturar eventos de edición e inserción
+        add_action('jet-form-builder/action/after-post-insert', [$this->process, 'save_post_images'], 999, 2);
+        add_action('jet-form-builder/action/after-post-update', [$this->process, 'save_post_images'], 999, 2);
+        
         // Hook para JetEngine
         add_action('jet-engine/forms/booking/notifications/after-base-fields', [$this->process, 'save_post_images'], 999, 2);
         
@@ -142,6 +152,36 @@ class JetForm_Media_Gallery_Main {
         
         // Debug
         add_filter('jet-form-builder/form-handler/form-data', [$this->process, 'debug_form_data'], 10);
+        
+        // Asegurarnos de que tenemos el campo galería en la configuración
+        $this->register_default_fields();
+    }
+    
+    /**
+     * Registrar campos por defecto
+     */
+    private function register_default_fields() {
+        // Verificar si ya tenemos configuración para el campo "galeria"
+        $found_galeria = false;
+        foreach ($this->settings['image_fields'] as $field) {
+            if ($field['name'] === 'galeria') {
+                $found_galeria = true;
+                break;
+            }
+        }
+        
+        // Si no existe, registrar el campo "galeria"
+        if (!$found_galeria) {
+            $this->register_image_field(
+                'galeria',
+                'Galería de imágenes',
+                'gallery',
+                'galeria',
+                'JetEngine',
+                false
+            );
+            $this->log_debug("Campo 'galeria' registrado automáticamente");
+        }
     }
     
     /**
@@ -206,5 +246,61 @@ class JetForm_Media_Gallery_Main {
      */
     public function get_version() {
         return $this->version;
+    }
+    
+    /**
+     * Registrar un campo de imagen
+     * 
+     * @param string $field_name Nombre del campo
+     * @param string $label Etiqueta del campo
+     * @param string $type Tipo de campo: 'single' o 'gallery'
+     * @param string $meta_key Clave meta donde se guardará el valor
+     * @param string $meta_type Tipo de meta: 'image' o 'gallery'
+     * @param bool $required Si el campo es requerido
+     * @return bool Éxito o fallo
+     */
+    public function register_image_field($field_name, $label, $type = 'gallery', $meta_key = '', $meta_type = 'JetEngine', $required = false) {
+        if (empty($field_name) || empty($label)) {
+            return false;
+        }
+        
+        // Usar el nombre del campo como clave meta si no se especifica
+        if (empty($meta_key)) {
+            $meta_key = $field_name;
+        }
+        
+        // Verificar si el campo ya existe
+        $exists = false;
+        foreach ($this->settings['image_fields'] as $key => $field) {
+            if ($field['name'] === $field_name) {
+                // Actualizar campo existente
+                $this->settings['image_fields'][$key] = [
+                    'name' => $field_name,
+                    'label' => $label,
+                    'type' => $type,
+                    'meta_key' => $meta_key,
+                    'meta_type' => $meta_type,
+                    'required' => $required,
+                ];
+                $exists = true;
+                break;
+            }
+        }
+        
+        // Si no existe, añadir nuevo campo
+        if (!$exists) {
+            $this->settings['image_fields'][] = [
+                'name' => $field_name,
+                'label' => $label,
+                'type' => $type,
+                'meta_key' => $meta_key,
+                'meta_type' => $meta_type,
+                'required' => $required,
+            ];
+        }
+        
+        // Guardar configuración
+        update_option('jetform_media_gallery_settings', $this->settings);
+        return true;
     }
 } 
