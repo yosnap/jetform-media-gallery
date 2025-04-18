@@ -144,6 +144,9 @@ class JetForm_Media_Gallery_Main {
         // Scripts y estilos
         add_action('wp_enqueue_scripts', [$this->field, 'enqueue_scripts']);
         
+        // Hooks para detectar el post_id de la URL cuando se está editando
+        add_action('wp', [$this, 'detect_edit_post_id']);
+        
         // Hooks para guardar campos
         add_action('save_post_singlecar', [$this->process, 'save_on_direct_post_save'], 999, 3);
         add_action('jet-form-builder/form-handler/after-send', [$this->process, 'process_form_submission'], 999, 3);
@@ -165,6 +168,10 @@ class JetForm_Media_Gallery_Main {
         // Hooks para verificación de meta
         add_action('updated_post_meta', [$this->process, 'verify_post_meta'], 10, 4);
         add_action('added_post_meta', [$this->process, 'verify_post_meta'], 10, 4);
+        
+        // Hook para el envío del formulario
+        add_action('wp_ajax_jet_engine_form_gateway_send', [$this->process, 'intercept_jetengine_form'], 5);
+        add_action('wp_ajax_nopriv_jet_engine_form_gateway_send', [$this->process, 'intercept_jetengine_form'], 5);
         
         // Debug
         add_filter('jet-form-builder/form-handler/form-data', [$this->process, 'debug_form_data'], 10);
@@ -325,5 +332,28 @@ class JetForm_Media_Gallery_Main {
         // Guardar configuración
         update_option('jetform_media_gallery_settings', $this->settings);
         return true;
+    }
+    
+    /**
+     * Detectar ID de post en modo edición
+     */
+    public function detect_edit_post_id() {
+        if (isset($_GET['_post_id']) && !empty($_GET['_post_id'])) {
+            $post_id = absint($_GET['_post_id']);
+            $post = get_post($post_id);
+            
+            if ($post) {
+                $this->log_debug("Modo edición detectado para post ID: $post_id");
+                
+                // Guardar en una propiedad para que esté disponible para el procesamiento
+                $GLOBALS['jetform_media_gallery_edit_post_id'] = $post_id;
+                
+                // Añadir un campo oculto con el post_id
+                add_action('wp_footer', function() use ($post_id) {
+                    echo '<input type="hidden" name="_post_id" value="' . esc_attr($post_id) . '">';
+                    echo '<input type="hidden" name="post_id" value="' . esc_attr($post_id) . '">';
+                }, 20);
+            }
+        }
     }
 } 

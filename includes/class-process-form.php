@@ -494,22 +494,65 @@ class JetForm_Media_Gallery_Process {
      * Método de emergencia para guardar imágenes al final del procesamiento
      */
     public function emergency_save_images() {
-        // Solo procesar si estamos en un envío de formulario de JetFormBuilder
-        if (!isset($_POST['jet_form_builder_submit']) || !isset($_POST['has_media_gallery'])) {
+        // Solo procesar si estamos en un envío de formulario y hay datos de media gallery
+        if (empty($_POST) || (!isset($_POST['has_media_gallery']) && 
+                              !isset($_POST['imagen_destacada']) && 
+                              !isset($_POST['galeria'])
+                             )) {
             return;
         }
         
-        $this->main->log_debug("Método de emergencia activado para guardar imágenes");
+        $this->main->log_debug("=== MÉTODO DE EMERGENCIA ACTIVADO ===");
+        $this->main->log_debug("Datos POST: " . print_r($_POST, true));
         
-        // Intentar encontrar el ID del post más reciente del tipo correcto
-        $post_id = $this->find_last_post();
+        // Intentar encontrar el ID del post
+        $post_id = null;
+        
+        // 1. Verificar si tenemos el post_id en la variable global
+        if (isset($GLOBALS['jetform_media_gallery_edit_post_id'])) {
+            $post_id = $GLOBALS['jetform_media_gallery_edit_post_id'];
+            $this->main->log_debug("Post ID encontrado en globals: $post_id");
+        }
+        
+        // 2. Verificar _post_id en POST
+        if (!$post_id && isset($_POST['_post_id']) && !empty($_POST['_post_id'])) {
+            $post_id = absint($_POST['_post_id']);
+            $this->main->log_debug("Post ID encontrado en _post_id: $post_id");
+        }
+        
+        // 3. Verificar post_id en POST
+        if (!$post_id && isset($_POST['post_id']) && !empty($_POST['post_id'])) {
+            $post_id = absint($_POST['post_id']);
+            $this->main->log_debug("Post ID encontrado en post_id: $post_id");
+        }
+        
+        // 4. Verificar en la URL
+        if (!$post_id && isset($_GET['_post_id']) && !empty($_GET['_post_id'])) {
+            $post_id = absint($_GET['_post_id']);
+            $this->main->log_debug("Post ID encontrado en URL _post_id: $post_id");
+        }
+        
+        // 5. Último recurso: buscar el último post
+        if (!$post_id) {
+            $post_id = $this->find_last_post();
+            if ($post_id) {
+                $this->main->log_debug("Post ID encontrado buscando el último post: $post_id");
+            }
+        }
         
         if (!$post_id) {
             $this->main->log_debug("No se pudo encontrar un ID de post válido en emergency_save_images");
             return;
         }
         
-        $this->main->log_debug("ID de post encontrado en emergency_save_images: $post_id");
+        // Verificar que el post existe
+        $post = get_post($post_id);
+        if (!$post) {
+            $this->main->log_debug("Error: El post con ID $post_id no existe");
+            return;
+        }
+        
+        $this->main->log_debug("Post encontrado: " . $post->post_title);
         $this->save_images_to_post($post_id, $_POST);
     }
     
@@ -939,5 +982,48 @@ class JetForm_Media_Gallery_Process {
         }
         
         return null;
+    }
+    
+    /**
+     * Interceptar envío de formulario JetEngine
+     */
+    public function intercept_jetengine_form() {
+        $this->main->log_debug("=== INTERCEPTANDO FORMULARIO JETENGINE ===");
+        
+        // Verificar si tenemos datos de formulario
+        if (empty($_POST)) {
+            $this->main->log_debug("No hay datos POST disponibles");
+            return;
+        }
+        
+        $this->main->log_debug("Datos del formulario: " . print_r($_POST, true));
+        
+        // Intentar encontrar el ID del post
+        $post_id = null;
+        
+        // Buscar en los datos del formulario
+        if (isset($_POST['_post_id']) && !empty($_POST['_post_id'])) {
+            $post_id = absint($_POST['_post_id']);
+            $this->main->log_debug("Post ID encontrado en _post_id: $post_id");
+        } elseif (isset($_POST['post_id']) && !empty($_POST['post_id'])) {
+            $post_id = absint($_POST['post_id']);
+            $this->main->log_debug("Post ID encontrado en post_id: $post_id");
+        } elseif (isset($GLOBALS['jetform_media_gallery_edit_post_id'])) {
+            $post_id = $GLOBALS['jetform_media_gallery_edit_post_id'];
+            $this->main->log_debug("Post ID encontrado en globals: $post_id");
+        }
+        
+        // Verificar si el post existe
+        if ($post_id) {
+            $post = get_post($post_id);
+            if ($post) {
+                $this->main->log_debug("Post encontrado: " . $post->post_title);
+                $this->save_images_to_post($post_id, $_POST);
+            } else {
+                $this->main->log_debug("Post no encontrado con ID: $post_id");
+            }
+        } else {
+            $this->main->log_debug("No se encontró un ID de post en los datos del formulario");
+        }
     }
 } 
