@@ -242,14 +242,85 @@ class JetForm_Media_Gallery_Admin {
     public function render_button_style_field() {
         $options = get_option($this->option_name);
         $use_theme = isset($options['use_theme_buttons']) ? $options['use_theme_buttons'] : false;
+        $button_bg = isset($options['button_bg']) ? $options['button_bg'] : '#0073aa';
+        $button_text = isset($options['button_text']) ? $options['button_text'] : '#ffffff';
+        $button_hover_bg = isset($options['button_hover_bg']) ? $options['button_hover_bg'] : '#005c8a';
+        $button_border_radius = isset($options['button_border_radius']) ? $options['button_border_radius'] : 4;
+        $button_padding = isset($options['button_padding']) ? $options['button_padding'] : '10px 16px';
         ?>
         <label>
             <input type="checkbox" 
                    name="<?php echo $this->option_name; ?>[use_theme_buttons]" 
                    value="1" 
+                   id="use-theme-buttons"
                    <?php checked($use_theme, true); ?>>
             Usar estilos de botones del tema
         </label>
+
+        <div id="custom-button-options" style="margin-top: 15px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; <?php echo $use_theme ? 'display: none;' : ''; ?>">
+            <h4 style="margin-top: 0;">Personalizar botones</h4>
+            
+            <p>
+                <label>
+                    Color de fondo:
+                    <input type="color" 
+                           name="<?php echo $this->option_name; ?>[button_bg]" 
+                           value="<?php echo esc_attr($button_bg); ?>">
+                </label>
+            </p>
+            
+            <p>
+                <label>
+                    Color del texto:
+                    <input type="color" 
+                           name="<?php echo $this->option_name; ?>[button_text]" 
+                           value="<?php echo esc_attr($button_text); ?>">
+                </label>
+            </p>
+            
+            <p>
+                <label>
+                    Color de fondo (hover):
+                    <input type="color" 
+                           name="<?php echo $this->option_name; ?>[button_hover_bg]" 
+                           value="<?php echo esc_attr($button_hover_bg); ?>">
+                </label>
+            </p>
+            
+            <p>
+                <label>
+                    Radio de borde (px):
+                    <input type="number" 
+                           name="<?php echo $this->option_name; ?>[button_border_radius]" 
+                           value="<?php echo esc_attr($button_border_radius); ?>"
+                           min="0"
+                           max="50">
+                </label>
+            </p>
+            
+            <p>
+                <label>
+                    Padding (formato CSS):
+                    <input type="text" 
+                           name="<?php echo $this->option_name; ?>[button_padding]" 
+                           value="<?php echo esc_attr($button_padding); ?>"
+                           placeholder="10px 16px">
+                </label>
+                <span class="description">Ejemplo: '10px 16px' (vertical horizontal)</span>
+            </p>
+        </div>
+
+        <script>
+        jQuery(document).ready(function($) {
+            $('#use-theme-buttons').on('change', function() {
+                if ($(this).is(':checked')) {
+                    $('#custom-button-options').slideUp();
+                } else {
+                    $('#custom-button-options').slideDown();
+                }
+            });
+        });
+        </script>
         <?php
     }
     
@@ -637,8 +708,9 @@ class JetForm_Media_Gallery_Admin {
     }
 
     public function render_debug_mode_field() {
-        $options = get_option('jetform_media_gallery_settings');
-        $debug_mode = isset($options['debug_mode']) ? $options['debug_mode'] : false;
+        $options = get_option('jetform_media_gallery_settings', []);
+        // Asegurar que debug_mode es un valor booleano explícito
+        $debug_mode = isset($options['debug_mode']) && $options['debug_mode'] === true;
         ?>
         <label>
             <input type="checkbox" 
@@ -707,6 +779,8 @@ class JetForm_Media_Gallery_Admin {
         
         if (isset($input['use_theme_buttons'])) {
             $sanitized['use_theme_buttons'] = (bool)$input['use_theme_buttons'];
+        } else {
+            $sanitized['use_theme_buttons'] = false;
         }
         
         if (isset($input['remove_button_position'])) {
@@ -778,14 +852,43 @@ class JetForm_Media_Gallery_Admin {
         }
         
         // Sanitizar opciones de depuración
-        $sanitized['debug_mode'] = isset($input['debug_mode']) ? true : false;
-        $sanitized['max_log_size'] = absint($input['max_log_size']);
+        if (isset($input['debug_mode'])) {
+            $sanitized['debug_mode'] = (bool)$input['debug_mode'];
+        } else {
+            // Si el checkbox no está marcado, el valor no se envía
+            // Por lo tanto, debemos establecerlo explícitamente a false
+            $sanitized['debug_mode'] = false;
+        }
+        
+        $sanitized['max_log_size'] = isset($input['max_log_size']) ? absint($input['max_log_size']) : 5;
         if ($sanitized['max_log_size'] < 1) $sanitized['max_log_size'] = 1;
         if ($sanitized['max_log_size'] > 100) $sanitized['max_log_size'] = 100;
 
-        $sanitized['max_log_files'] = absint($input['max_log_files']);
+        $sanitized['max_log_files'] = isset($input['max_log_files']) ? absint($input['max_log_files']) : 5;
         if ($sanitized['max_log_files'] < 1) $sanitized['max_log_files'] = 1;
         if ($sanitized['max_log_files'] > 20) $sanitized['max_log_files'] = 20;
+
+        // Sanitizar los estilos personalizados de botones
+        if (isset($input['button_bg'])) {
+            $sanitized['button_bg'] = sanitize_hex_color($input['button_bg']);
+        }
+        
+        if (isset($input['button_text'])) {
+            $sanitized['button_text'] = sanitize_hex_color($input['button_text']);
+        }
+        
+        if (isset($input['button_hover_bg'])) {
+            $sanitized['button_hover_bg'] = sanitize_hex_color($input['button_hover_bg']);
+        }
+        
+        if (isset($input['button_border_radius'])) {
+            $sanitized['button_border_radius'] = absint($input['button_border_radius']);
+            $sanitized['button_border_radius'] = min(max($sanitized['button_border_radius'], 0), 50);
+        }
+        
+        if (isset($input['button_padding'])) {
+            $sanitized['button_padding'] = sanitize_text_field($input['button_padding']);
+        }
 
         return $sanitized;
     }
@@ -843,8 +946,15 @@ class JetForm_Media_Gallery_Admin {
      * Alternar modo debug
      */
     private function toggle_debug_mode() {
-        $options = get_option($this->option_name);
-        $options['debug_mode'] = !isset($options['debug_mode']) || !$options['debug_mode'];
+        $options = get_option($this->option_name, []);
+        
+        // Asegurar que el valor booleano es correcto
+        if (isset($options['debug_mode'])) {
+            $options['debug_mode'] = !$options['debug_mode'];
+        } else {
+            $options['debug_mode'] = true;
+        }
+        
         update_option($this->option_name, $options);
         
         $status = $options['debug_mode'] ? 'activado' : 'desactivado';
@@ -860,8 +970,10 @@ class JetForm_Media_Gallery_Admin {
      * Renderizar página de logs
      */
     private function render_logs_page() {
-        $options = get_option($this->option_name);
-        $debug_enabled = isset($options['debug_mode']) && $options['debug_mode'];
+        // Obtener configuraciones frescas
+        $options = get_option($this->option_name, []);
+        // Asegurar que debug_mode es un booleano explícito
+        $debug_enabled = isset($options['debug_mode']) && $options['debug_mode'] === true;
         ?>
         <div class="logs-container">
             <div class="log-controls" style="margin-bottom: 20px; padding: 15px; background: #fff; border: 1px solid #ccd0d4; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
