@@ -374,35 +374,172 @@ class JetForm_Media_Gallery_Process {
      * Guardar imágenes después de insertar post
      */
     public function save_post_images($post_id, $form_data = []) {
-        $this->main->log_debug("Hook save_post_images activado con post_id: $post_id");
+        // Primero verificamos el tipo de objeto antes de intentar loggear
+        $post_id_original = $post_id;
+        $post_id_extraido = null;
         
-        // Si el post_id es un objeto (puede ocurrir con los hooks nuevos), intentar extraer el ID
-        if (is_object($post_id) && method_exists($post_id, 'get_id')) {
-            $this->main->log_debug("Post ID es un objeto con método get_id()");
-            if (method_exists($post_id, 'get_post_id')) {
-                $post_id = $post_id->get_post_id();
-                $this->main->log_debug("ID extraído con get_post_id(): $post_id");
-            } elseif (property_exists($post_id, 'post_id')) {
-                $post_id = $post_id->post_id;
-                $this->main->log_debug("ID extraído de propiedad post_id: $post_id");
-            } else {
-                // Intentar extraer de JetFormBuilder 
-                if (property_exists($post_id, 'action') && property_exists($post_id->action, 'inserted_id')) {
-                    $post_id = $post_id->action->inserted_id;
-                    $this->main->log_debug("ID extraído de action->inserted_id: $post_id");
+        // Si el post_id es un objeto, intentar extraer el ID antes de cualquier otra operación
+        if (is_object($post_id)) {
+            // Verificar si es un objeto del tipo Insert_Post_Action (JetFormBuilder v3+)
+            if (is_a($post_id, 'JFB_Modules\Actions_V2\Insert_Post\Insert_Post_Action')) {
+                $this->main->log_debug("Post ID es un objeto JFB_Modules\Actions_V2\Insert_Post\Insert_Post_Action");
+                
+                // Intentar obtener el ID del post a través de reflexión o métodos disponibles
+                if (method_exists($post_id, 'get_inserted_post_id')) {
+                    $post_id_extraido = $post_id->get_inserted_post_id();
+                    $this->main->log_debug("ID extraído con get_inserted_post_id(): " . $post_id_extraido);
+                } elseif (method_exists($post_id, 'get_id')) {
+                    $post_id_extraido = $post_id->get_id();
+                    $this->main->log_debug("ID extraído con get_id(): " . $post_id_extraido);
+                } elseif (property_exists($post_id, '_post_id')) {
+                    $post_id_extraido = $post_id->_post_id;
+                    $this->main->log_debug("ID extraído de propiedad _post_id: " . $post_id_extraido);
+                } elseif (property_exists($post_id, 'post_id')) {
+                    $post_id_extraido = $post_id->post_id;
+                    $this->main->log_debug("ID extraído de propiedad post_id: " . $post_id_extraido);
                 } else {
-                    $this->main->log_debug("No se pudo extraer el ID del objeto");
-                    // Intentemos obtener la acción actual
-                    if (function_exists('jet_fb_action_handler') && method_exists(jet_fb_action_handler(), 'get_current_action')) {
-                        $current_action = jet_fb_action_handler()->get_current_action();
-                        if ($current_action && property_exists($current_action, 'inserted_id')) {
-                            $post_id = $current_action->inserted_id;
-                            $this->main->log_debug("ID extraído de current_action->inserted_id: $post_id");
+                    // Intentar extraer usando reflexión para acceder a propiedades privadas/protegidas
+                    try {
+                        $reflection = new \ReflectionClass($post_id);
+                        // Buscar propiedades relacionadas con post_id
+                        foreach ($reflection->getProperties() as $property) {
+                            $property->setAccessible(true);
+                            $prop_name = $property->getName();
+                            $prop_value = $property->getValue($post_id);
+                            
+                            // Si el nombre de la propiedad contiene "post_id" o "inserted"
+                            if (strpos($prop_name, 'post_id') !== false || strpos($prop_name, 'inserted') !== false) {
+                                if (is_numeric($prop_value)) {
+                                    $post_id_extraido = intval($prop_value);
+                                    $this->main->log_debug("ID extraído con reflexión de propiedad $prop_name: " . $post_id_extraido);
+                                    break;
+                                }
+                            }
+                            
+                            // Si el valor es un array que podría contener el post_id
+                            if (is_array($prop_value) && (isset($prop_value['post_id']) || isset($prop_value['ID']))) {
+                                if (isset($prop_value['post_id'])) {
+                                    $post_id_extraido = intval($prop_value['post_id']);
+                                    $this->main->log_debug("ID extraído de array en propiedad $prop_name con clave post_id: " . $post_id_extraido);
+                                    break;
+                                } elseif (isset($prop_value['ID'])) {
+                                    $post_id_extraido = intval($prop_value['ID']);
+                                    $this->main->log_debug("ID extraído de array en propiedad $prop_name con clave ID: " . $post_id_extraido);
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        $this->main->log_debug("Error al usar reflexión: " . $e->getMessage());
+                    } catch (\Error $e) {
+                        $this->main->log_debug("Error al usar reflexión: " . $e->getMessage());
+                    }
+                }
+                
+                // Si pudimos extraer el ID, usarlo para el resto del procesamiento
+                if ($post_id_extraido) {
+                    $post_id = $post_id_extraido;
+                } else {
+                    // Si no pudimos extraer el ID, intentar obtenerlo del form_data o del context
+                    if (is_object($form_data) && method_exists($form_data, 'get_context')) {
+                        // Verificar si es una instancia de Action_Handler que necesita un argumento
+                        if (is_a($form_data, 'Jet_Form_Builder\Actions\Action_Handler')) {
+                            // Action_Handler::get_context necesita un argumento
+                            if (method_exists($form_data, 'get_all')) {
+                                $actions = $form_data->get_all();
+                                foreach ($actions as $action) {
+                                    if (is_a($action, 'JFB_Modules\Actions_V2\Insert_Post\Insert_Post_Action')) {
+                                        try {
+                                            $context = $form_data->get_context($action);
+                                            if (isset($context['post_id'])) {
+                                                $post_id = $context['post_id'];
+                                                $this->main->log_debug("ID extraído del contexto del action handler: " . $post_id);
+                                                break;
+                                            }
+                                        } catch (\Exception $e) {
+                                            $this->main->log_debug("Error al obtener contexto del action: " . $e->getMessage());
+                                        } catch (\Error $e) {
+                                            $this->main->log_debug("Error al obtener contexto del action: " . $e->getMessage());
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            // Para otros objetos que puedan tener get_context() sin argumentos
+                            try {
+                                $context = $form_data->get_context();
+                                if (isset($context['post_id'])) {
+                                    $post_id = $context['post_id'];
+                                    $this->main->log_debug("ID extraído del contexto: " . $post_id);
+                                }
+                            } catch (\Exception $e) {
+                                $this->main->log_debug("Error al obtener contexto: " . $e->getMessage());
+                            } catch (\Error $e) {
+                                $this->main->log_debug("Error al obtener contexto: " . $e->getMessage());
+                            }
+                        }
+                    }
+                    
+                    // Si aún no tenemos el ID, intentar otras opciones
+                    if (!$post_id || is_object($post_id)) {
+                        // Intentar obtener de $_POST
+                        if (isset($_POST['post_id'])) {
+                            $post_id = $_POST['post_id'];
+                            $this->main->log_debug("ID extraído de POST: " . $post_id);
+                        } elseif (isset($_POST['_post_id'])) {
+                            $post_id = $_POST['_post_id'];
+                            $this->main->log_debug("ID extraído de POST (_post_id): " . $post_id);
+                        } elseif (isset($_GET['_post_id'])) {
+                            $post_id = $_GET['_post_id'];
+                            $this->main->log_debug("ID extraído de GET (_post_id): " . $post_id);
+                        } else {
+                            // Último recurso - obtener el post_id global
+                            if (isset($GLOBALS['jetform_media_gallery_edit_post_id'])) {
+                                $post_id = $GLOBALS['jetform_media_gallery_edit_post_id'];
+                                $this->main->log_debug("ID extraído de variable global: " . $post_id);
+                            } else {
+                                // Si todo falla, buscar el último post
+                                $post_id = $this->find_last_post();
+                                if ($post_id) {
+                                    $this->main->log_debug("ID obtenido buscando el último post: " . $post_id);
+                                } else {
+                                    $this->main->log_debug("No se pudo obtener un post_id válido del objeto");
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (method_exists($post_id, 'get_id')) {
+                $this->main->log_debug("Post ID es un objeto con método get_id()");
+                if (method_exists($post_id, 'get_post_id')) {
+                    $post_id = $post_id->get_post_id();
+                    $this->main->log_debug("ID extraído con get_post_id(): $post_id");
+                } elseif (property_exists($post_id, 'post_id')) {
+                    $post_id = $post_id->post_id;
+                    $this->main->log_debug("ID extraído de propiedad post_id: $post_id");
+                } else {
+                    // Intentar extraer de JetFormBuilder 
+                    if (property_exists($post_id, 'action') && property_exists($post_id->action, 'inserted_id')) {
+                        $post_id = $post_id->action->inserted_id;
+                        $this->main->log_debug("ID extraído de action->inserted_id: $post_id");
+                    } else {
+                        $this->main->log_debug("No se pudo extraer el ID del objeto");
+                        // Intentemos obtener la acción actual
+                        if (function_exists('jet_fb_action_handler') && method_exists(jet_fb_action_handler(), 'get_current_action')) {
+                            $current_action = jet_fb_action_handler()->get_current_action();
+                            if ($current_action && property_exists($current_action, 'inserted_id')) {
+                                $post_id = $current_action->inserted_id;
+                                $this->main->log_debug("ID extraído de current_action->inserted_id: $post_id");
+                            }
                         }
                     }
                 }
             }
         }
+        
+        // Ahora podemos loggear con seguridad ya que post_id es un valor simple
+        $this->main->log_debug("Hook save_post_images activado con post_id: $post_id");
         
         // Si form_data es un objeto (JetFormBuilder action handler), extrae los datos
         if (is_object($form_data)) {
@@ -413,6 +550,16 @@ class JetForm_Media_Gallery_Process {
             } elseif (method_exists($form_data, 'to_array')) {
                 $form_data = $form_data->to_array();
                 $this->main->log_debug("Datos extraídos con to_array()");
+            } elseif (method_exists($form_data, 'get_context') && !is_a($form_data, 'Jet_Form_Builder\Actions\Action_Handler')) {
+                // Nueva versión de JetFormBuilder usa get_context pero sólo si no es Action_Handler
+                try {
+                    $form_data = $form_data->get_context();
+                    $this->main->log_debug("Datos extraídos con get_context()");
+                } catch (\Exception $e) {
+                    $this->main->log_debug("Error al obtener contexto: " . $e->getMessage());
+                } catch (\Error $e) {
+                    $this->main->log_debug("Error al obtener contexto: " . $e->getMessage());
+                }
             } elseif (function_exists('jet_fb_action_handler') && method_exists(jet_fb_action_handler(), 'request_data')) {
                 // Obtener los datos del request actual
                 $form_data = jet_fb_action_handler()->request_data;
@@ -847,21 +994,22 @@ class JetForm_Media_Gallery_Process {
         
         // Verificación final
         $thumbnail_id = get_post_thumbnail_id($post_id);
-        $gallery = !empty($gallery_meta_key) ? get_post_meta($post_id, $gallery_meta_key, true) : [];
+        $this->main->log_debug("ID de imagen destacada después del guardado: $thumbnail_id");
         
-        $this->main->log_debug("=== VERIFICACIÓN FINAL ===");
-        $this->main->log_debug("Thumbnail ID guardado: " . ($thumbnail_id ? $thumbnail_id : "no encontrado"));
-        $this->main->log_debug("Meta key de galería: $gallery_meta_key");
-        $this->main->log_debug("Galería guardada: " . (is_array($gallery) ? implode(', ', $gallery) : "no encontrada"));
+        $saved_gallery = [];
+        if (!empty($gallery_meta_key)) {
+            $saved_gallery = get_post_meta($post_id, $gallery_meta_key, true);
+            $this->main->log_debug("Galería guardada en $gallery_meta_key: " . print_r($saved_gallery, true));
+        }
         
-        // Forzar limpieza de caché
+        // Limpiar cache para asegurar que los cambios son visibles de inmediato
         clean_post_cache($post_id);
         wp_cache_delete($post_id, 'posts');
         wp_cache_delete($post_id, 'post_meta');
         
         $this->main->log_debug("=== FIN DE GUARDADO DE IMÁGENES ===");
         
-        return $success;
+        return true;
     }
     
     /**
@@ -933,107 +1081,143 @@ class JetForm_Media_Gallery_Process {
     }
     
     /**
-     * Extraer post_id de objetos de JetFormBuilder
+     * Extraer post_id desde diferentes estructuras de objetos
      */
     private function extract_post_id_from_objects($object) {
         $post_id = null;
         
-        if (!is_object($object)) {
-            return null;
-        }
-        
-        $this->main->log_debug("Intentando extraer post_id de un objeto: " . get_class($object));
-        
-        // Extraer de un objeto action de JetFormBuilder
-        if (method_exists($object, 'get_id') && method_exists($object, 'get_post_id')) {
-            $post_id = $object->get_post_id();
-            $this->main->log_debug("Post ID extraído con get_post_id(): $post_id");
-            return $post_id;
-        }
-        
-        // Extraer de propiedades comunes
-        $properties_to_check = ['post_id', 'inserted_id', 'ID'];
-        foreach ($properties_to_check as $prop) {
-            if (property_exists($object, $prop) && !empty($object->$prop)) {
-                $post_id = $object->$prop;
-                $this->main->log_debug("Post ID extraído de propiedad $prop: $post_id");
-                return $post_id;
+        // Intentar extraer de diferentes estructuras de objetos
+        if (is_object($object)) {
+            // Caso 1: Objeto form_handler con propiedad form_data
+            if (property_exists($object, 'form_data') && is_array($object->form_data)) {
+                if (isset($object->form_data['post_id'])) {
+                    $post_id = absint($object->form_data['post_id']);
+                    $this->main->log_debug("Post ID encontrado en object->form_data[post_id]: $post_id");
+                } elseif (isset($object->form_data['_post_id'])) {
+                    $post_id = absint($object->form_data['_post_id']);
+                    $this->main->log_debug("Post ID encontrado en object->form_data[_post_id]: $post_id");
+                }
             }
-        }
-        
-        // Extraer de objetos anidados
-        $nested_properties = ['action', 'current_action', 'modifier'];
-        foreach ($nested_properties as $prop) {
-            if (property_exists($object, $prop) && is_object($object->$prop)) {
-                $nested_id = $this->extract_post_id_from_objects($object->$prop);
-                if ($nested_id) {
-                    return $nested_id;
+            
+            // Caso 2: Objeto con propiedad request_data (JetEngine)
+            if (!$post_id && property_exists($object, 'request_data') && is_array($object->request_data)) {
+                if (isset($object->request_data['post_id'])) {
+                    $post_id = absint($object->request_data['post_id']);
+                    $this->main->log_debug("Post ID encontrado en object->request_data[post_id]: $post_id");
+                } elseif (isset($object->request_data['_post_id'])) {
+                    $post_id = absint($object->request_data['_post_id']);
+                    $this->main->log_debug("Post ID encontrado en object->request_data[_post_id]: $post_id");
+                }
+            }
+            
+            // Caso 3: Objeto action_handler con properties
+            if (!$post_id && property_exists($object, 'action_handler') && is_object($object->action_handler)) {
+                // Respuesta de acciones
+                if (property_exists($object->action_handler, 'response_data') && is_array($object->action_handler->response_data)) {
+                    if (isset($object->action_handler->response_data['inserted_post_id'])) {
+                        $post_id = absint($object->action_handler->response_data['inserted_post_id']);
+                        $this->main->log_debug("Post ID encontrado en action_handler->response_data[inserted_post_id]: $post_id");
+                    } elseif (isset($object->action_handler->response_data['post_id'])) {
+                        $post_id = absint($object->action_handler->response_data['post_id']);
+                        $this->main->log_debug("Post ID encontrado en action_handler->response_data[post_id]: $post_id");
+                    }
+                }
+                
+                // Configuraciones de acciones
+                if (!$post_id && property_exists($object->action_handler, 'actions') && is_array($object->action_handler->actions)) {
+                    foreach ($object->action_handler->actions as $action) {
+                        if (is_object($action) && property_exists($action, 'settings') && is_array($action->settings)) {
+                            if (isset($action->settings['post_id']) && !empty($action->settings['post_id'])) {
+                                $post_id = absint($action->settings['post_id']);
+                                $this->main->log_debug("Post ID encontrado en action->settings[post_id]: $post_id");
+                                break;
+                            }
+                            
+                            // También verificar en fields_map
+                            if (isset($action->settings['fields_map']) && is_array($action->settings['fields_map'])) {
+                                foreach ($action->settings['fields_map'] as $field => $value) {
+                                    if ($field === 'ID' && !empty($value)) {
+                                        $post_id = absint($value);
+                                        $this->main->log_debug("Post ID encontrado en action->settings[fields_map][ID]: $post_id");
+                                        break 2;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
         
-        // Si sigue siendo null, verificar métodos específicos de JetFormBuilder
-        if (method_exists($object, 'get_inserted_post_id')) {
-            $post_id = $object->get_inserted_post_id();
-            $this->main->log_debug("Post ID extraído con get_inserted_post_id(): $post_id");
-            return $post_id;
-        }
-        
-        return null;
+        return $post_id;
     }
     
     /**
-     * Verificar si estamos en JetFormBuilder
+     * Verificar si JetFormBuilder está activo
      */
     private function is_jetformbuilder_active() {
-        return function_exists('jet_fb_action_handler') || function_exists('jet_form_builder');
+        return defined('JET_FORM_BUILDER_VERSION') || class_exists('Jet_Form_Builder\\Plugin');
     }
     
     /**
-     * Obtener el ID de post actual del handler de JetFormBuilder
+     * Obtener el ID del post actual desde el handler
      */
     private function get_current_post_id_from_handler() {
-        if (!function_exists('jet_fb_action_handler')) {
+        // Verificar si estamos en un contexto de JetFormBuilder
+        if (!$this->is_jetformbuilder_active()) {
             return null;
         }
         
-        $handler = jet_fb_action_handler();
-        
-        if (!$handler) {
-            return null;
-        }
-        
-        // Verificar response_data
-        if (method_exists($handler, 'get_response_data')) {
-            $response_data = $handler->get_response_data();
-            
-            if (isset($response_data['inserted_post_id'])) {
-                return absint($response_data['inserted_post_id']);
-            }
-            
-            if (isset($response_data['post_id'])) {
-                return absint($response_data['post_id']);
-            }
-        }
-        
-        // Verificar acciones
-        if (method_exists($handler, 'get_current_action')) {
-            $current_action = $handler->get_current_action();
-            
-            if ($current_action) {
-                $action_id = $this->extract_post_id_from_objects($current_action);
+        // Intentar obtener el ID del post del handler actual
+        try {
+            // Para JetFormBuilder v2+
+            if (class_exists('\\Jet_Form_Builder\\Form_Handler\\Form_Handler')) {
+                $handler = \Jet_Form_Builder\Form_Handler\Form_Handler::instance();
                 
-                if ($action_id) {
-                    return $action_id;
+                if (method_exists($handler, 'get_form_data')) {
+                    $form_data = $handler->get_form_data();
+                    
+                    if (isset($form_data['post_id'])) {
+                        return absint($form_data['post_id']);
+                    }
+                    if (isset($form_data['_post_id'])) {
+                        return absint($form_data['_post_id']);
+                    }
+                }
+                
+                // Intentar obtener desde action handler
+                if (method_exists($handler, 'action_handler') && $handler->action_handler()) {
+                    $action_handler = $handler->action_handler();
+                    
+                    // Verificar si hay acciones
+                    if (method_exists($action_handler, 'get_all') && is_callable([$action_handler, 'get_all'])) {
+                        $actions = $action_handler->get_all();
+                        
+                        foreach ($actions as $action) {
+                            if (method_exists($action, 'get_id') && $action->get_id() === 'update_post') {
+                                if (method_exists($action, 'get_settings') && is_callable([$action, 'get_settings'])) {
+                                    $settings = $action->get_settings();
+                                    
+                                    if (isset($settings['post_id']) && !empty($settings['post_id'])) {
+                                        return absint($settings['post_id']);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
+        } catch (\Exception $e) {
+            $this->main->log_debug("Error al obtener post_id del handler: " . $e->getMessage());
+        } catch (\Error $e) {
+            $this->main->log_debug("Error al obtener post_id del handler: " . $e->getMessage());
         }
         
         return null;
     }
     
     /**
-     * Interceptar envío de formulario JetEngine
+     * Interceptar envío de formulario de JetEngine
      */
     public function intercept_jetengine_form() {
         $this->main->log_debug("=== INTERCEPTANDO FORMULARIO JETENGINE ===");

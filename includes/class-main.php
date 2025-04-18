@@ -21,7 +21,7 @@ class JetForm_Media_Gallery_Main {
     /**
      * Version del plugin
      */
-    private $version = '1.0.4';
+    private $version = '1.0.5';
     
     /**
      * Configuraciones del plugin
@@ -148,6 +148,7 @@ class JetForm_Media_Gallery_Main {
         add_action('wp', [$this, 'detect_edit_post_id']);
         
         // Filtros para asegurar el post_id correcto
+        add_filter('jet-form-builder/request', [$this, 'force_correct_post_id'], 5);
         add_filter('jet-form-builder/form-handler/form-data', [$this, 'force_correct_post_id'], 5);
         add_filter('jet-engine/forms/handler/form-data', [$this, 'force_correct_post_id'], 5);
         
@@ -160,6 +161,10 @@ class JetForm_Media_Gallery_Main {
         add_action('jet-form-builder/actions/after-actions', [$this->process, 'save_after_actions'], 999, 2);
         
         // Hooks específicos para capturar eventos de edición e inserción
+        add_action('jet-form-builder/action/after-insert_post', [$this->process, 'save_post_images'], 999, 2);
+        add_action('jet-form-builder/action/after-update_post', [$this->process, 'save_post_images'], 999, 2);
+        
+        // Mantener hooks antiguos para retrocompatibilidad
         add_action('jet-form-builder/action/after-post-insert', [$this->process, 'save_post_images'], 999, 2);
         add_action('jet-form-builder/action/after-post-update', [$this->process, 'save_post_images'], 999, 2);
         
@@ -177,7 +182,9 @@ class JetForm_Media_Gallery_Main {
         add_action('updated_post_meta', [$this->process, 'verify_post_meta'], 10, 4);
         add_action('added_post_meta', [$this->process, 'verify_post_meta'], 10, 4);
         
-        // Debug
+        // Debug - actualizamos para usar el nuevo hook
+        add_filter('jet-form-builder/request', [$this->process, 'debug_form_data'], 10);
+        // Mantener el hook antiguo para retrocompatibilidad
         add_filter('jet-form-builder/form-handler/form-data', [$this->process, 'debug_form_data'], 10);
         
         // Asegurarnos de que tenemos el campo galería en la configuración
@@ -339,127 +346,106 @@ class JetForm_Media_Gallery_Main {
     }
     
     /**
-     * Detectar ID de post en modo edición
+     * Detectar ID de post en modo edición desde la URL
      */
     public function detect_edit_post_id() {
-        if (isset($_GET['_post_id']) && !empty($_GET['_post_id'])) {
+        // Verificar si estamos en una pantalla de edición
+        $post_id = null;
+        
+        // 1. Primero verificar si está en la URL como _post_id (común en edición de JFB)
+        if (isset($_GET['_post_id'])) {
             $post_id = absint($_GET['_post_id']);
-            $post = get_post($post_id);
             
+            // Verificar que el post existe
+            $post = get_post($post_id);
             if ($post) {
-                $this->log_debug("Modo edición detectado para post ID: $post_id");
-                
-                // Guardar en una propiedad para que esté disponible para el procesamiento
+                // Guardar en una variable global para que esté disponible en todo el proceso
                 $GLOBALS['jetform_media_gallery_edit_post_id'] = $post_id;
-                
-                // Sobrescribir el post_id en $_POST y $_REQUEST
-                if (isset($_POST['post_id'])) {
-                    $_POST['post_id'] = $post_id;
-                    $this->log_debug("Sobrescrito post_id en POST con: $post_id");
-                }
-                
-                if (isset($_REQUEST['post_id'])) {
-                    $_REQUEST['post_id'] = $post_id;
-                    $this->log_debug("Sobrescrito post_id en REQUEST con: $post_id");
-                }
-                
-                // Añadir un hook para modificar el formulario
-                add_action('wp_footer', function() use ($post_id) {
-                    // Modificar los campos post_id existentes con JavaScript
-                    echo "<script>
-                        document.addEventListener('DOMContentLoaded', function() {
-                            // Modificar cualquier campo post_id existente
-                            var postIdFields = document.querySelectorAll('input[name=\"post_id\"]');
-                            if (postIdFields.length > 0) {
-                                for (var i = 0; i < postIdFields.length; i++) {
-                                    postIdFields[i].value = '{$post_id}';
-                                    console.log('Modificado campo post_id existente');
-                                }
-                            } else {
-                                // Si no existe, agregar el campo al formulario
-                                var forms = document.querySelectorAll('form');
-                                for (var i = 0; i < forms.length; i++) {
-                                    var hiddenField = document.createElement('input');
-                                    hiddenField.type = 'hidden';
-                                    hiddenField.name = 'post_id';
-                                    hiddenField.value = '{$post_id}';
-                                    forms[i].appendChild(hiddenField);
-                                    console.log('Añadido campo post_id al formulario');
-                                }
-                            }
-                            
-                            // Hacer lo mismo con _post_id
-                            var postIdFields2 = document.querySelectorAll('input[name=\"_post_id\"]');
-                            if (postIdFields2.length > 0) {
-                                for (var i = 0; i < postIdFields2.length; i++) {
-                                    postIdFields2[i].value = '{$post_id}';
-                                    console.log('Modificado campo _post_id existente');
-                                }
-                            } else {
-                                // Si no existe, agregar el campo al formulario
-                                var forms = document.querySelectorAll('form');
-                                for (var i = 0; i < forms.length; i++) {
-                                    var hiddenField = document.createElement('input');
-                                    hiddenField.type = 'hidden';
-                                    hiddenField.name = '_post_id';
-                                    hiddenField.value = '{$post_id}';
-                                    forms[i].appendChild(hiddenField);
-                                    console.log('Añadido campo _post_id al formulario');
-                                }
-                            }
-                        });
-                    </script>";
-                }, 999);
+                $this->log_debug("Post ID detectado en URL: $post_id - " . $post->post_title);
+                return $post_id;
             }
         }
+        
+        // 2. Verificar en action=edit&post=X (formato WordPress estándar)
+        if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['post'])) {
+            $post_id = absint($_GET['post']);
+            
+            // Verificar que el post existe
+            $post = get_post($post_id);
+            if ($post) {
+                // Guardar en una variable global para que esté disponible en todo el proceso
+                $GLOBALS['jetform_media_gallery_edit_post_id'] = $post_id;
+                $this->log_debug("Post ID detectado en URL formato estándar: $post_id - " . $post->post_title);
+                return $post_id;
+            }
+        }
+        
+        // 3. Verificar si hay un post_id en la url
+        if (isset($_GET['post_id'])) {
+            $post_id = absint($_GET['post_id']);
+            
+            // Verificar que el post existe
+            $post = get_post($post_id);
+            if ($post) {
+                // Guardar en una variable global para que esté disponible en todo el proceso
+                $GLOBALS['jetform_media_gallery_edit_post_id'] = $post_id;
+                $this->log_debug("Post ID detectado en URL como post_id: $post_id - " . $post->post_title);
+                return $post_id;
+            }
+        }
+        
+        // 4. Verificar si la URL tiene un patrón específico para edición
+        $current_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+        
+        if (strpos($current_url, 'edit') !== false) {
+            // Intentar extraer ID de patrones comunes
+            preg_match('/post=(\d+)/', $current_url, $matches);
+            
+            if (!empty($matches[1])) {
+                $post_id = absint($matches[1]);
+                
+                // Verificar que el post existe
+                $post = get_post($post_id);
+                if ($post) {
+                    // Guardar en una variable global para que esté disponible en todo el proceso
+                    $GLOBALS['jetform_media_gallery_edit_post_id'] = $post_id;
+                    $this->log_debug("Post ID detectado en URL por regex: $post_id - " . $post->post_title);
+                    return $post_id;
+                }
+            }
+        }
+        
+        return null;
     }
     
     /**
-     * Forzar el ID de post correcto en los datos del formulario
+     * Forzar que se utilice el ID de post correcto
      */
     public function force_correct_post_id($form_data) {
-        // Verificar si estamos en modo edición
-        if (isset($_GET['_post_id']) && !empty($_GET['_post_id'])) {
-            $url_post_id = absint($_GET['_post_id']);
-            $post = get_post($url_post_id);
+        // Si detectamos un post_id desde la URL o de la variable global, asegurarnos de que esté en los datos del formulario
+        if (isset($GLOBALS['jetform_media_gallery_edit_post_id'])) {
+            $post_id = $GLOBALS['jetform_media_gallery_edit_post_id'];
             
+            // Verificar que el post existe
+            $post = get_post($post_id);
             if ($post) {
-                $this->log_debug("Forzando post_id correcto desde URL: $url_post_id");
-                
-                // Reemplazar cualquier post_id existente
-                if (isset($form_data['post_id'])) {
-                    $old_id = $form_data['post_id'];
-                    $form_data['post_id'] = $url_post_id;
-                    $this->log_debug("Reemplazado post_id: $old_id -> $url_post_id");
-                } else {
-                    $form_data['post_id'] = $url_post_id;
-                    $this->log_debug("Añadido post_id: $url_post_id");
+                if (!isset($form_data['_post_id']) || empty($form_data['_post_id'])) {
+                    $form_data['_post_id'] = $post_id;
+                    $this->log_debug("Post ID forzado en datos del formulario: $post_id");
                 }
-                
-                // También para _post_id
-                if (isset($form_data['_post_id'])) {
-                    $old_id = $form_data['_post_id'];
+            }
+        }
+        
+        // También verificar la URL para los casos donde la variable global no está configurada
+        if (isset($_GET['_post_id'])) {
+            $url_post_id = absint($_GET['_post_id']);
+            
+            // Verificar que el post existe
+            $post = get_post($url_post_id);
+            if ($post) {
+                if (!isset($form_data['_post_id']) || empty($form_data['_post_id'])) {
                     $form_data['_post_id'] = $url_post_id;
-                    $this->log_debug("Reemplazado _post_id: $old_id -> $url_post_id");
-                } else {
-                    $form_data['_post_id'] = $url_post_id;
-                    $this->log_debug("Añadido _post_id: $url_post_id");
-                }
-                
-                // Para JetEngine Insert Post Action
-                if (isset($form_data['inserted_post_id'])) {
-                    $old_id = $form_data['inserted_post_id'];
-                    $form_data['inserted_post_id'] = $url_post_id;
-                    $this->log_debug("Reemplazado inserted_post_id: $old_id -> $url_post_id");
-                }
-                
-                // Verificar si hay un array de __fields_map y actualizar el campo ID
-                if (isset($form_data['__fields_map']) && is_array($form_data['__fields_map'])) {
-                    if (isset($form_data['__fields_map']['ID'])) {
-                        $old_id = $form_data['__fields_map']['ID'];
-                        $form_data['__fields_map']['ID'] = $url_post_id;
-                        $this->log_debug("Reemplazado __fields_map[ID]: $old_id -> $url_post_id");
-                    }
+                    $this->log_debug("Post ID forzado desde URL: $url_post_id");
                 }
             }
         }
