@@ -7,6 +7,7 @@ Plugin personalizado para WordPress que agrega un campo de galería de medios pa
 - Campo de imagen destacada: Permite seleccionar una imagen como destacada para el post
 - Campo de galería: Permite seleccionar múltiples imágenes para una galería
 - Integración completa con JetFormBuilder
+- Soporte para la edición de posts existentes: Carga y muestra automáticamente imágenes guardadas
 - Diseño responsive y personalizable
 - Panel de administración para configurar los campos
 - Sistema de logging para depuración
@@ -39,6 +40,20 @@ Plugin personalizado para WordPress que agrega un campo de galería de medios pa
 Parámetros disponibles:
 - `field`: (requerido) Nombre del campo configurado en el panel de administración
 - `required`: (opcional) Si es requerido, usar '1' para requerido, '0' para opcional
+
+### Modo de edición
+
+El plugin detecta automáticamente cuando un formulario se está utilizando para editar un post existente y:
+
+1. Carga las imágenes guardadas previamente
+2. Muestra la imagen destacada actual del post
+3. Muestra las imágenes de la galería actuales
+4. Permite añadir o eliminar imágenes existentes
+
+Esta funcionalidad es compatible con:
+- Parámetro `_post_id` de JetFormBuilder
+- Parámetro `edit` en la URL
+- Integración con JetEngine
 
 ### Almacenamiento
 
@@ -83,6 +98,12 @@ El plugin ofrece múltiples opciones de personalización a través del panel de 
 - Comportamiento y orden de los componentes
 
 ## Changelog
+
+### 1.0.3
+- Añadido soporte para carga automática de imágenes en modo edición
+- Mejorada la detección del ID de post en varios contextos
+- Corregido el problema con los campos que no mostraban las imágenes guardadas
+- Mejorado el sistema de logging para facilitar la depuración
 
 ### 1.0.2
 - Agregada nueva pestaña de administración de logs

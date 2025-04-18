@@ -287,11 +287,57 @@ class JetForm_Media_Gallery_Process {
         }
         
         // Asegurarnos de que tenemos los datos de imágenes
+        // Verificar campos de imagen destacada que comienzan con 'featured_' o 'imagen_'
+        foreach ($form_data as $key => $value) {
+            if (preg_match('/^(featured_|imagen_)/', $key) && !empty($value)) {
+                $form_data['media_gallery_featured'] = $value;
+                $this->main->log_debug("Campo de imagen destacada detectado: $key con valor: $value");
+                break;
+            }
+        }
+        
+        // Verificar campos de galería
+        foreach ($form_data as $key => $value) {
+            if (preg_match('/^(gallery|galeria)/', $key) && !empty($value)) {
+                $form_data['media_gallery_gallery'] = $value;
+                $this->main->log_debug("Campo de galería detectado: $key con valor: " . (is_array($value) ? implode(',', $value) : $value));
+                break;
+            }
+        }
+        
+        // Verificar si hay datos de media_gallery
         if (isset($_POST['media_gallery_featured'])) {
             $form_data['media_gallery_featured'] = $_POST['media_gallery_featured'];
         }
         if (isset($_POST['media_gallery_gallery'])) {
             $form_data['media_gallery_gallery'] = $_POST['media_gallery_gallery'];
+        }
+        
+        // Verificar campos configurados
+        $settings = $this->main->get_settings();
+        $fields = isset($settings['image_fields']) ? $settings['image_fields'] : [];
+        
+        foreach ($fields as $field) {
+            $field_name = isset($field['name']) ? $field['name'] : '';
+            $meta_key = isset($field['meta_key']) ? $field['meta_key'] : '';
+            
+            if (!empty($field_name) && !empty($meta_key) && isset($form_data[$field_name])) {
+                $value = $form_data[$field_name];
+                
+                if ($field['type'] === 'single') {
+                    // Imagen destacada
+                    if ($meta_key === '_thumbnail_id') {
+                        $form_data['media_gallery_featured'] = $value;
+                    } else {
+                        update_post_meta($post_id, $meta_key, $value);
+                        $this->main->log_debug("Guardado campo single personalizado: $meta_key con valor: $value");
+                    }
+                } else {
+                    // Galería
+                    $form_data['media_gallery_gallery'] = $value;
+                    $this->main->log_debug("Campo de galería configurado: $field_name -> $meta_key con valor: " . (is_array($value) ? implode(',', $value) : $value));
+                }
+            }
         }
         
         // Verificar permisos
@@ -323,16 +369,17 @@ class JetForm_Media_Gallery_Process {
                 if (!$result) {
                     // Intentar forzar el guardado
                     update_post_meta($post_id, '_thumbnail_id', $featured_id);
+                    $this->main->log_debug("Forzando actualización de _thumbnail_id directamente");
                 }
+            } else {
+                $this->main->log_debug("Error: La imagen con ID $featured_id no existe o no es un adjunto válido");
             }
         }
         
         // Procesar galería
         if (!empty($form_data['media_gallery_gallery'])) {
-            $gallery_ids = is_array($form_data['media_gallery_gallery']) 
-                ? $form_data['media_gallery_gallery'] 
-                : explode(',', $form_data['media_gallery_gallery']);
-            
+            $gallery_value = $form_data['media_gallery_gallery'];
+            $gallery_ids = is_array($gallery_value) ? $gallery_value : explode(',', $gallery_value);
             $gallery_ids = array_map('intval', array_filter($gallery_ids));
             
             if (!empty($gallery_ids)) {
@@ -346,10 +393,17 @@ class JetForm_Media_Gallery_Process {
                 
                 if (!$result) {
                     $result = update_post_meta($post_id, 'ad_gallery', $gallery_ids);
+                    $this->main->log_debug("Actualizada galería existente en ad_gallery");
+                } else {
+                    $this->main->log_debug("Añadida nueva galería en ad_gallery");
                 }
                 
                 $this->main->log_debug("Resultado guardado galería: " . ($result ? "éxito" : "fallo"));
+            } else {
+                $this->main->log_debug("Advertencia: Array de galería vacío después de filtrar");
             }
+        } else {
+            $this->main->log_debug("No se encontraron datos para la galería");
         }
         
         // Verificación final

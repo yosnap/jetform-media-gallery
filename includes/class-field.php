@@ -62,6 +62,29 @@ class JetForm_Media_Gallery_Field {
         $required = filter_var($atts['required'], FILTER_VALIDATE_BOOLEAN) || !empty($field_config['required']);
         $required_attr = $required ? 'required' : '';
         
+        // Verificar si estamos en modo edición y cargar valores existentes
+        $post_id = $this->get_current_post_id();
+        $initial_value = '';
+        $initial_images = [];
+        
+        if ($post_id) {
+            if ($field_config['type'] === 'single') {
+                // Obtener imagen destacada si es ese tipo de campo
+                if ($field_config['meta_key'] === '_thumbnail_id') {
+                    $initial_value = get_post_thumbnail_id($post_id);
+                } else {
+                    $initial_value = get_post_meta($post_id, $field_config['meta_key'], true);
+                }
+            } else {
+                // Obtener galería
+                $gallery = get_post_meta($post_id, $field_config['meta_key'], true);
+                if (!empty($gallery)) {
+                    $initial_value = is_array($gallery) ? implode(',', $gallery) : $gallery;
+                    $initial_images = is_array($gallery) ? $gallery : explode(',', $gallery);
+                }
+            }
+        }
+        
         ob_start();
         ?>
         <div class="jet-form-builder__field media-gallery-field">
@@ -83,9 +106,12 @@ class JetForm_Media_Gallery_Field {
                                 </button>
                             <?php endif; ?>
                             
-                            <div id="featured-image-preview-<?php echo esc_attr($field_config['name']); ?>" class="image-preview">
+                            <div id="featured-image-preview-<?php echo esc_attr($field_config['name']); ?>" class="image-preview <?php echo !empty($initial_value) ? 'has-image' : ''; ?>"
+                                <?php if (!empty($initial_value)) : ?>
+                                    style="background-image: url('<?php echo wp_get_attachment_url($initial_value); ?>');"
+                                <?php endif; ?>>
                                 <div class="image-overlay"></div>
-                                <button type="button" class="remove-featured-image" style="display: none;">×</button>
+                                <button type="button" class="remove-featured-image" style="<?php echo !empty($initial_value) ? '' : 'display: none;'; ?>">×</button>
                             </div>
                             
                             <?php if ($settings['select_button_order'] === 'after') : ?>
@@ -100,6 +126,7 @@ class JetForm_Media_Gallery_Field {
                                class="jet-form-builder__field"
                                data-meta-type="<?php echo esc_attr($field_config['meta_type']); ?>"
                                data-meta-key="<?php echo esc_attr($field_config['meta_key']); ?>"
+                               value="<?php echo esc_attr($initial_value); ?>"
                                <?php echo $required_attr; ?>>
                     </div>
                 <?php else : ?>
@@ -112,7 +139,20 @@ class JetForm_Media_Gallery_Field {
                                 </button>
                             <?php endif; ?>
                             
-                            <div id="gallery-images-preview-<?php echo esc_attr($field_config['name']); ?>" class="images-preview"></div>
+                            <div id="gallery-images-preview-<?php echo esc_attr($field_config['name']); ?>" class="images-preview">
+                                <?php if (!empty($initial_images)) : ?>
+                                    <?php foreach ($initial_images as $img_id) : 
+                                        if (empty($img_id)) continue;
+                                        $img_url = wp_get_attachment_url($img_id); 
+                                        if (!$img_url) continue;
+                                    ?>
+                                        <div class="gallery-image" data-id="<?php echo esc_attr($img_id); ?>" style="background-image: url('<?php echo esc_url($img_url); ?>')">
+                                            <div class="image-overlay"></div>
+                                            <button type="button" class="remove-image">×</button>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
                             
                             <?php if ($settings['select_button_order'] === 'after') : ?>
                                 <button type="button" class="button upload-gallery-images" data-field="<?php echo esc_attr($field_config['name']); ?>">
@@ -126,6 +166,7 @@ class JetForm_Media_Gallery_Field {
                                class="jet-form-builder__field"
                                data-meta-type="<?php echo esc_attr($field_config['meta_type']); ?>"
                                data-meta-key="<?php echo esc_attr($field_config['meta_key']); ?>"
+                               value="<?php echo esc_attr($initial_value); ?>"
                                <?php echo $required_attr; ?>>
                     </div>
                 <?php endif; ?>
@@ -160,6 +201,51 @@ class JetForm_Media_Gallery_Field {
                 console.error('Error: wp.media no está disponible. Asegúrate de cargar los scripts de medios de WordPress.');
                 return;
             }
+            
+            // Inicializar campos con valores existentes si estamos en modo edición
+            $('.media-gallery-field').each(function() {
+                // Comprobar si hay un valor inicial en los campos hidden
+                var inputField = $(this).find('input[type=\"hidden\"]');
+                var fieldName = '';
+                
+                // Procesar campos de imagen destacada
+                if ($(this).find('.featured-image-container').length > 0) {
+                    fieldName = $(this).find('.upload-featured-image').data('field');
+                    var previewContainer = $('#featured-image-preview-' + fieldName);
+                    var removeButton = previewContainer.find('.remove-featured-image');
+                    
+                    // Si el campo tiene valor, mostrar la imagen y el botón de eliminar
+                    if (inputField.val()) {
+                        previewContainer.addClass('has-image');
+                        removeButton.show();
+                    }
+                }
+                
+                // Procesar campos de galería
+                if ($(this).find('.gallery-container').length > 0) {
+                    fieldName = $(this).find('.upload-gallery-images').data('field');
+                    var galleryPreview = $('#gallery-images-preview-' + fieldName);
+                    
+                    // Asegurarse de que los eventos click estén asignados a los botones de eliminar
+                    galleryPreview.find('.remove-image').on('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        var imageContainer = $(this).parent();
+                        var imageId = imageContainer.data('id');
+                        var galleryIds = $('#gallery-images-input-' + fieldName).val().split(',');
+                        
+                        galleryIds = galleryIds.filter(function(id) {
+                            return id != imageId;
+                        });
+                        
+                        $('#gallery-images-input-' + fieldName).val(galleryIds.join(','));
+                        imageContainer.fadeOut(300, function() {
+                            $(this).remove();
+                        });
+                    });
+                }
+            });
             
             // Media Uploader para la imagen destacada
             $(document).on('click', '.upload-featured-image', function(e) {
@@ -258,8 +344,83 @@ class JetForm_Media_Gallery_Field {
                     $(this).remove();
                 });
             });
+            
+            // Agregar un campo oculto para indicar que el formulario contiene campos de media gallery
+            if ($('.media-gallery-field').length && $('form').length) {
+                $('form').append('<input type=\"hidden\" name=\"has_media_gallery\" value=\"1\">');
+            }
         });
         ";
+    }
+    
+    /**
+     * Obtener el ID del post actual
+     * 
+     * Verifica si estamos en modo edición y obtiene el ID del post
+     */
+    private function get_current_post_id() {
+        global $wp;
+        
+        // Verificar si estamos editando un post existente a través de JetFormBuilder
+        if (isset($_REQUEST['_post_id']) && !empty($_REQUEST['_post_id'])) {
+            $this->main->log_debug("Post ID encontrado en _post_id: " . intval($_REQUEST['_post_id']));
+            return intval($_REQUEST['_post_id']);
+        }
+        
+        // Verificar si estamos en modo edición en una página de JetEngine
+        if (isset($_GET['post_id']) && !empty($_GET['post_id'])) {
+            $this->main->log_debug("Post ID encontrado en GET post_id: " . intval($_GET['post_id']));
+            return intval($_GET['post_id']);
+        }
+        
+        // Verificar si estamos en el panel de edición de WordPress
+        if (isset($_GET['post']) && !empty($_GET['post'])) {
+            $this->main->log_debug("Post ID encontrado en GET post: " . intval($_GET['post']));
+            return intval($_GET['post']);
+        }
+        
+        // Verificar específicamente para JetFormBuilder
+        $current_url = home_url(add_query_arg(array(), $wp->request));
+        if (strpos($current_url, 'edit=') !== false) {
+            preg_match('/edit=(\d+)/', $current_url, $matches);
+            if (!empty($matches[1])) {
+                $this->main->log_debug("Post ID encontrado en URL edit: " . intval($matches[1]));
+                return intval($matches[1]);
+            }
+        }
+        
+        // Verificar parámetro en la URL
+        if (isset($_GET['edit']) && !empty($_GET['edit'])) {
+            $this->main->log_debug("Post ID encontrado en GET edit: " . intval($_GET['edit']));
+            return intval($_GET['edit']);
+        }
+        
+        // Verificar si hay un post_id en POST
+        if (isset($_POST['post_id']) && !empty($_POST['post_id'])) {
+            $this->main->log_debug("Post ID encontrado en POST post_id: " . intval($_POST['post_id']));
+            return intval($_POST['post_id']);
+        }
+        
+        // En caso de funciones de JetEngine/Elementor
+        if (function_exists('jet_engine') && isset(jet_engine()->listings) && method_exists(jet_engine()->listings, 'get_current_object')) {
+            $current_object = jet_engine()->listings->get_current_object();
+            if ($current_object && is_object($current_object) && isset($current_object->ID)) {
+                $this->main->log_debug("Post ID encontrado en JetEngine current_object: " . intval($current_object->ID));
+                return intval($current_object->ID);
+            }
+        }
+        
+        // Verificar si estamos en una página single
+        if (is_singular()) {
+            $post_id = get_the_ID();
+            if ($post_id) {
+                $this->main->log_debug("Post ID encontrado en is_singular: " . intval($post_id));
+                return intval($post_id);
+            }
+        }
+        
+        $this->main->log_debug("No se pudo determinar un Post ID");
+        return null;
     }
     
     /**
