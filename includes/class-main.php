@@ -36,6 +36,7 @@ class JetForm_Media_Gallery_Main {
     private $styles = null;
     private $logger = null;
     private $admin = null;
+    private $jetengine = null;
     
     /**
      * Constructor
@@ -116,6 +117,21 @@ class JetForm_Media_Gallery_Main {
         $this->field = new JetForm_Media_Gallery_Field($this);
         $this->process = new JetForm_Media_Gallery_Process($this);
         $this->styles = new JetForm_Media_Gallery_Styles($this);
+        
+        // Inicializar integraciones
+        $this->init_integrations();
+    }
+    
+    /**
+     * Inicializar integraciones con otros plugins
+     */
+    private function init_integrations() {
+        // Integración con JetEngine
+        if (function_exists('jet_engine')) {
+            require_once JFB_MEDIA_GALLERY_PATH . 'includes/jetengine-integration.php';
+            $this->jetengine = new JetForm_Media_Gallery_JetEngine_Integration($this);
+            $this->log_debug("Integración con JetEngine inicializada");
+        }
     }
     
     /**
@@ -246,6 +262,13 @@ class JetForm_Media_Gallery_Main {
      */
     public function get_version() {
         return $this->version;
+    }
+    
+    /**
+     * Obtener la instancia de integración con JetEngine
+     */
+    public function get_jetengine() {
+        return $this->jetengine;
     }
     
     /**
