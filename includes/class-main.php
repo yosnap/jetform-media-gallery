@@ -147,6 +147,10 @@ class JetForm_Media_Gallery_Main {
         // Hooks para detectar el post_id de la URL cuando se está editando
         add_action('wp', [$this, 'detect_edit_post_id']);
         
+        // Filtros para asegurar el post_id correcto
+        add_filter('jet-form-builder/form-handler/form-data', [$this, 'force_correct_post_id'], 5);
+        add_filter('jet-engine/forms/handler/form-data', [$this, 'force_correct_post_id'], 5);
+        
         // Hooks para guardar campos
         add_action('save_post_singlecar', [$this->process, 'save_on_direct_post_save'], 999, 3);
         add_action('jet-form-builder/form-handler/after-send', [$this->process, 'process_form_submission'], 999, 3);
@@ -162,16 +166,16 @@ class JetForm_Media_Gallery_Main {
         // Hook para JetEngine
         add_action('jet-engine/forms/booking/notifications/after-base-fields', [$this->process, 'save_post_images'], 999, 2);
         
+        // Hook para el envío del formulario
+        add_action('wp_ajax_jet_engine_form_gateway_send', [$this->process, 'intercept_jetengine_form'], 5);
+        add_action('wp_ajax_nopriv_jet_engine_form_gateway_send', [$this->process, 'intercept_jetengine_form'], 5);
+        
         // Hook de emergencia
         add_action('shutdown', [$this->process, 'emergency_save_images'], 999);
         
         // Hooks para verificación de meta
         add_action('updated_post_meta', [$this->process, 'verify_post_meta'], 10, 4);
         add_action('added_post_meta', [$this->process, 'verify_post_meta'], 10, 4);
-        
-        // Hook para el envío del formulario
-        add_action('wp_ajax_jet_engine_form_gateway_send', [$this->process, 'intercept_jetengine_form'], 5);
-        add_action('wp_ajax_nopriv_jet_engine_form_gateway_send', [$this->process, 'intercept_jetengine_form'], 5);
         
         // Debug
         add_filter('jet-form-builder/form-handler/form-data', [$this->process, 'debug_form_data'], 10);
@@ -348,12 +352,118 @@ class JetForm_Media_Gallery_Main {
                 // Guardar en una propiedad para que esté disponible para el procesamiento
                 $GLOBALS['jetform_media_gallery_edit_post_id'] = $post_id;
                 
-                // Añadir un campo oculto con el post_id
+                // Sobrescribir el post_id en $_POST y $_REQUEST
+                if (isset($_POST['post_id'])) {
+                    $_POST['post_id'] = $post_id;
+                    $this->log_debug("Sobrescrito post_id en POST con: $post_id");
+                }
+                
+                if (isset($_REQUEST['post_id'])) {
+                    $_REQUEST['post_id'] = $post_id;
+                    $this->log_debug("Sobrescrito post_id en REQUEST con: $post_id");
+                }
+                
+                // Añadir un hook para modificar el formulario
                 add_action('wp_footer', function() use ($post_id) {
-                    echo '<input type="hidden" name="_post_id" value="' . esc_attr($post_id) . '">';
-                    echo '<input type="hidden" name="post_id" value="' . esc_attr($post_id) . '">';
-                }, 20);
+                    // Modificar los campos post_id existentes con JavaScript
+                    echo "<script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            // Modificar cualquier campo post_id existente
+                            var postIdFields = document.querySelectorAll('input[name=\"post_id\"]');
+                            if (postIdFields.length > 0) {
+                                for (var i = 0; i < postIdFields.length; i++) {
+                                    postIdFields[i].value = '{$post_id}';
+                                    console.log('Modificado campo post_id existente');
+                                }
+                            } else {
+                                // Si no existe, agregar el campo al formulario
+                                var forms = document.querySelectorAll('form');
+                                for (var i = 0; i < forms.length; i++) {
+                                    var hiddenField = document.createElement('input');
+                                    hiddenField.type = 'hidden';
+                                    hiddenField.name = 'post_id';
+                                    hiddenField.value = '{$post_id}';
+                                    forms[i].appendChild(hiddenField);
+                                    console.log('Añadido campo post_id al formulario');
+                                }
+                            }
+                            
+                            // Hacer lo mismo con _post_id
+                            var postIdFields2 = document.querySelectorAll('input[name=\"_post_id\"]');
+                            if (postIdFields2.length > 0) {
+                                for (var i = 0; i < postIdFields2.length; i++) {
+                                    postIdFields2[i].value = '{$post_id}';
+                                    console.log('Modificado campo _post_id existente');
+                                }
+                            } else {
+                                // Si no existe, agregar el campo al formulario
+                                var forms = document.querySelectorAll('form');
+                                for (var i = 0; i < forms.length; i++) {
+                                    var hiddenField = document.createElement('input');
+                                    hiddenField.type = 'hidden';
+                                    hiddenField.name = '_post_id';
+                                    hiddenField.value = '{$post_id}';
+                                    forms[i].appendChild(hiddenField);
+                                    console.log('Añadido campo _post_id al formulario');
+                                }
+                            }
+                        });
+                    </script>";
+                }, 999);
             }
         }
+    }
+    
+    /**
+     * Forzar el ID de post correcto en los datos del formulario
+     */
+    public function force_correct_post_id($form_data) {
+        // Verificar si estamos en modo edición
+        if (isset($_GET['_post_id']) && !empty($_GET['_post_id'])) {
+            $url_post_id = absint($_GET['_post_id']);
+            $post = get_post($url_post_id);
+            
+            if ($post) {
+                $this->log_debug("Forzando post_id correcto desde URL: $url_post_id");
+                
+                // Reemplazar cualquier post_id existente
+                if (isset($form_data['post_id'])) {
+                    $old_id = $form_data['post_id'];
+                    $form_data['post_id'] = $url_post_id;
+                    $this->log_debug("Reemplazado post_id: $old_id -> $url_post_id");
+                } else {
+                    $form_data['post_id'] = $url_post_id;
+                    $this->log_debug("Añadido post_id: $url_post_id");
+                }
+                
+                // También para _post_id
+                if (isset($form_data['_post_id'])) {
+                    $old_id = $form_data['_post_id'];
+                    $form_data['_post_id'] = $url_post_id;
+                    $this->log_debug("Reemplazado _post_id: $old_id -> $url_post_id");
+                } else {
+                    $form_data['_post_id'] = $url_post_id;
+                    $this->log_debug("Añadido _post_id: $url_post_id");
+                }
+                
+                // Para JetEngine Insert Post Action
+                if (isset($form_data['inserted_post_id'])) {
+                    $old_id = $form_data['inserted_post_id'];
+                    $form_data['inserted_post_id'] = $url_post_id;
+                    $this->log_debug("Reemplazado inserted_post_id: $old_id -> $url_post_id");
+                }
+                
+                // Verificar si hay un array de __fields_map y actualizar el campo ID
+                if (isset($form_data['__fields_map']) && is_array($form_data['__fields_map'])) {
+                    if (isset($form_data['__fields_map']['ID'])) {
+                        $old_id = $form_data['__fields_map']['ID'];
+                        $form_data['__fields_map']['ID'] = $url_post_id;
+                        $this->log_debug("Reemplazado __fields_map[ID]: $old_id -> $url_post_id");
+                    }
+                }
+            }
+        }
+        
+        return $form_data;
     }
 } 

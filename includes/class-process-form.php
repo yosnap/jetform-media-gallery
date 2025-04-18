@@ -96,7 +96,45 @@ class JetForm_Media_Gallery_Process {
         
         $this->main->log_debug("=== INICIO DE BÚSQUEDA DE POST ID ===");
         
-        // 0. Intentar extraer post_id si $handler es un objeto
+        // 0. PRIORIDAD MÁXIMA: Verificar en la URL (_post_id)
+        if (isset($_GET['_post_id']) && !empty($_GET['_post_id'])) {
+            $url_post_id = absint($_GET['_post_id']);
+            $post = get_post($url_post_id);
+            
+            if ($post) {
+                $this->main->log_debug("Post ID encontrado en URL (_post_id): $url_post_id");
+                $this->main->log_debug("Post encontrado: " . $post->post_title);
+                return $url_post_id;
+            } else {
+                $this->main->log_debug("Post ID en URL no es válido: $url_post_id");
+            }
+        }
+        
+        // 0.1. Verificar la variable global
+        if (isset($GLOBALS['jetform_media_gallery_edit_post_id'])) {
+            $global_post_id = $GLOBALS['jetform_media_gallery_edit_post_id'];
+            $post = get_post($global_post_id);
+            
+            if ($post) {
+                $this->main->log_debug("Post ID encontrado en variable global: $global_post_id");
+                $this->main->log_debug("Post encontrado: " . $post->post_title);
+                return $global_post_id;
+            }
+        }
+        
+        // 0.2. Verificar _post_id en POST (campo oculto que añadimos)
+        if (isset($_POST['_post_id']) && !empty($_POST['_post_id'])) {
+            $form_post_id = absint($_POST['_post_id']);
+            $post = get_post($form_post_id);
+            
+            if ($post) {
+                $this->main->log_debug("Post ID encontrado en POST (_post_id): $form_post_id");
+                $this->main->log_debug("Post encontrado: " . $post->post_title);
+                return $form_post_id;
+            }
+        }
+        
+        // 1. Intentar extraer post_id si $handler es un objeto
         if (is_object($handler)) {
             $post_id = $this->extract_post_id_from_objects($handler);
             
@@ -154,21 +192,6 @@ class JetForm_Media_Gallery_Process {
         if (!$post_id && isset($form_data['_post_id'])) {
             $post_id = absint($form_data['_post_id']);
             $this->main->log_debug("Post ID encontrado en form_data[_post_id]: $post_id");
-            
-            // Verificar que el post existe
-            $post = get_post($post_id);
-            if (!$post) {
-                $this->main->log_debug("El post ID $post_id no existe en la base de datos, continuando búsqueda...");
-                $post_id = null;
-            } else {
-                return $post_id;
-            }
-        }
-        
-        // También buscar en $_GET para URLs de edición
-        if (!$post_id && isset($_GET['_post_id'])) {
-            $post_id = absint($_GET['_post_id']);
-            $this->main->log_debug("Post ID encontrado en _GET[_post_id]: $post_id");
             
             // Verificar que el post existe
             $post = get_post($post_id);
@@ -508,35 +531,67 @@ class JetForm_Media_Gallery_Process {
         // Intentar encontrar el ID del post
         $post_id = null;
         
-        // 1. Verificar si tenemos el post_id en la variable global
-        if (isset($GLOBALS['jetform_media_gallery_edit_post_id'])) {
-            $post_id = $GLOBALS['jetform_media_gallery_edit_post_id'];
-            $this->main->log_debug("Post ID encontrado en globals: $post_id");
+        // 1. ALTA PRIORIDAD: Verificar ID en la URL
+        if (isset($_GET['_post_id']) && !empty($_GET['_post_id'])) {
+            $url_post_id = absint($_GET['_post_id']);
+            $post = get_post($url_post_id);
+            
+            if ($post) {
+                $post_id = $url_post_id;
+                $this->main->log_debug("Post ID encontrado en URL (_post_id): $post_id");
+                $this->main->log_debug("Post encontrado: " . $post->post_title);
+            } else {
+                $this->main->log_debug("Post ID en URL no es válido: $url_post_id");
+            }
         }
         
-        // 2. Verificar _post_id en POST
+        // 2. Verificar si tenemos el post_id en la variable global
+        if (!$post_id && isset($GLOBALS['jetform_media_gallery_edit_post_id'])) {
+            $global_post_id = $GLOBALS['jetform_media_gallery_edit_post_id'];
+            $post = get_post($global_post_id);
+            
+            if ($post) {
+                $post_id = $global_post_id;
+                $this->main->log_debug("Post ID encontrado en globals: $post_id");
+                $this->main->log_debug("Post encontrado: " . $post->post_title);
+            }
+        }
+        
+        // 3. Verificar _post_id en POST
         if (!$post_id && isset($_POST['_post_id']) && !empty($_POST['_post_id'])) {
-            $post_id = absint($_POST['_post_id']);
-            $this->main->log_debug("Post ID encontrado en _post_id: $post_id");
+            $form_post_id = absint($_POST['_post_id']);
+            $post = get_post($form_post_id);
+            
+            if ($post) {
+                $post_id = $form_post_id;
+                $this->main->log_debug("Post ID encontrado en _post_id: $post_id");
+                $this->main->log_debug("Post encontrado: " . $post->post_title);
+            }
         }
         
-        // 3. Verificar post_id en POST
+        // 4. Verificar post_id en POST
         if (!$post_id && isset($_POST['post_id']) && !empty($_POST['post_id'])) {
-            $post_id = absint($_POST['post_id']);
-            $this->main->log_debug("Post ID encontrado en post_id: $post_id");
-        }
-        
-        // 4. Verificar en la URL
-        if (!$post_id && isset($_GET['_post_id']) && !empty($_GET['_post_id'])) {
-            $post_id = absint($_GET['_post_id']);
-            $this->main->log_debug("Post ID encontrado en URL _post_id: $post_id");
+            $form_post_id = absint($_POST['post_id']);
+            $post = get_post($form_post_id);
+            
+            if ($post) {
+                $post_id = $form_post_id;
+                $this->main->log_debug("Post ID encontrado en post_id: $post_id");
+                $this->main->log_debug("Post encontrado: " . $post->post_title);
+            } else {
+                $this->main->log_debug("Post ID en post_id no es válido: $form_post_id");
+            }
         }
         
         // 5. Último recurso: buscar el último post
         if (!$post_id) {
             $post_id = $this->find_last_post();
             if ($post_id) {
-                $this->main->log_debug("Post ID encontrado buscando el último post: $post_id");
+                $post = get_post($post_id);
+                if ($post) {
+                    $this->main->log_debug("Post ID encontrado buscando el último post: $post_id");
+                    $this->main->log_debug("Post encontrado: " . $post->post_title);
+                }
             }
         }
         
@@ -545,14 +600,7 @@ class JetForm_Media_Gallery_Process {
             return;
         }
         
-        // Verificar que el post existe
-        $post = get_post($post_id);
-        if (!$post) {
-            $this->main->log_debug("Error: El post con ID $post_id no existe");
-            return;
-        }
-        
-        $this->main->log_debug("Post encontrado: " . $post->post_title);
+        // En este punto ya hemos verificado que el post existe
         $this->save_images_to_post($post_id, $_POST);
     }
     
