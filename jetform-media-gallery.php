@@ -2,7 +2,7 @@
 /**
  * Plugin Name: JetFormBuilder Media Gallery Field
  * Description: Agrega un campo de galería de medios para JetFormBuilder que permite seleccionar imagen destacada y galería para el CPT "singlecar"
- * Version: 1.0.5
+ * Version: 1.0.6
  * Author: Sn4p.dev
  * Text Domain: jetform-media-gallery
  */
@@ -54,36 +54,39 @@
  * 
  * CHANGELOG:
  * ---------
- * 1.0.5
+ * 1.0.6
  * - Añadido soporte total para JetFormBuilder v3.x
  * - Implementada detección de ID de post mejorada usando reflexión para casos complejos
  * - Actualización para usar los hooks modernos de JetFormBuilder v3
  * - Mejorado manejo de errores para evitar problemas de compatibilidad
  * 
- * 1.0.4
+ * 1.0.5
  * - Mejorada la integración con JetFormBuilder utilizando hooks específicos para inserción y actualización de posts
  * - Añadido soporte para diferentes formatos de datos de galería (string, array, JSON)
  * - Mejorada la detección y extracción de IDs de post desde diferentes contextos
  * - Optimizado el proceso de guardado de imágenes para mayor fiabilidad
  * - Añadido registro de diagnóstico más detallado para facilitar la depuración
  * 
- * 1.0.3
+ * 1.0.4
  * - Añadido soporte para carga automática de imágenes en modo edición
  * - Mejorada la detección del ID de post en varios contextos
  * - Corregido el problema con los campos que no mostraban las imágenes guardadas
  * - Mejorado el sistema de logging para facilitar la depuración
  * 
- * 1.0.2
+ * 1.0.3
  * - Agregada nueva pestaña de administración de logs
  * - Implementada interfaz para activar/desactivar modo debug
  * - Añadido visor de logs con colores por tipo de mensaje
  * - Mejorada la gestión y rotación de archivos de log
  * 
- * 1.0.1
+ * 1.0.2
  * - Corregido el procesamiento de campos del formulario
  * - Mejorado el sistema de logging
  * - Añadida compatibilidad con diferentes tipos de post
  * - Optimizado el proceso de guardado de imágenes
+ * 
+ * 1.0.1
+ * - Versión inicial del plugin
  * 
  * 1.0.0
  * - Versión inicial del plugin
@@ -95,9 +98,14 @@ if (!defined('ABSPATH')) {
 }
 
 // Definir constantes
-define('JFB_MEDIA_GALLERY_VERSION', '1.0.5');
+define('JFB_MEDIA_GALLERY_VERSION', '1.0.6');
 define('JFB_MEDIA_GALLERY_PATH', plugin_dir_path(__FILE__));
 define('JFB_MEDIA_GALLERY_URL', plugin_dir_url(__FILE__));
+
+// Asegurar que la carpeta js existe
+if (!file_exists(JFB_MEDIA_GALLERY_PATH . 'js')) {
+    mkdir(JFB_MEDIA_GALLERY_PATH . 'js', 0755);
+}
 
 // Cargar traducciones
 add_action('plugins_loaded', function() {
@@ -119,3 +127,35 @@ function jetform_media_gallery_init() {
     JetForm_Media_Gallery_Main::get_instance();
 }
 add_action('plugins_loaded', 'jetform_media_gallery_init');
+
+/**
+ * Función auxiliar para comprobar si estamos en una página con JetFormBuilder
+ */
+function jetform_media_gallery_is_form_page() {
+    global $post;
+    
+    if (!$post) {
+        return false;
+    }
+    
+    // Comprobar si el post contiene shortcodes de JetFormBuilder
+    $has_jetform = has_shortcode($post->post_content, 'jet_fb_form') || 
+                  has_shortcode($post->post_content, 'jetengine-booking-form');
+    
+    // Comprobar si es una página de edición específica
+    $is_edit_page = isset($_GET['edit']) || isset($_GET['_post_id']);
+    
+    return $has_jetform || $is_edit_page;
+}
+
+/**
+ * Asegurarse de que los scripts de WordPress se cargan en modo frontend
+ * cuando haya un formulario en la página para evitar 'wp is not defined'
+ */
+function jetform_media_gallery_enqueue_wp_scripts() {
+    if (!is_admin() && jetform_media_gallery_is_form_page()) {
+        wp_enqueue_script('wp-api');
+        wp_enqueue_media();
+    }
+}
+add_action('wp_enqueue_scripts', 'jetform_media_gallery_enqueue_wp_scripts', 5);

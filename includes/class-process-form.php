@@ -511,26 +511,26 @@ class JetForm_Media_Gallery_Process {
                     }
                 }
             } else if (method_exists($post_id, 'get_id')) {
-                $this->main->log_debug("Post ID es un objeto con método get_id()");
-                if (method_exists($post_id, 'get_post_id')) {
-                    $post_id = $post_id->get_post_id();
-                    $this->main->log_debug("ID extraído con get_post_id(): $post_id");
-                } elseif (property_exists($post_id, 'post_id')) {
-                    $post_id = $post_id->post_id;
-                    $this->main->log_debug("ID extraído de propiedad post_id: $post_id");
+            $this->main->log_debug("Post ID es un objeto con método get_id()");
+            if (method_exists($post_id, 'get_post_id')) {
+                $post_id = $post_id->get_post_id();
+                $this->main->log_debug("ID extraído con get_post_id(): $post_id");
+            } elseif (property_exists($post_id, 'post_id')) {
+                $post_id = $post_id->post_id;
+                $this->main->log_debug("ID extraído de propiedad post_id: $post_id");
+            } else {
+                // Intentar extraer de JetFormBuilder 
+                if (property_exists($post_id, 'action') && property_exists($post_id->action, 'inserted_id')) {
+                    $post_id = $post_id->action->inserted_id;
+                    $this->main->log_debug("ID extraído de action->inserted_id: $post_id");
                 } else {
-                    // Intentar extraer de JetFormBuilder 
-                    if (property_exists($post_id, 'action') && property_exists($post_id->action, 'inserted_id')) {
-                        $post_id = $post_id->action->inserted_id;
-                        $this->main->log_debug("ID extraído de action->inserted_id: $post_id");
-                    } else {
-                        $this->main->log_debug("No se pudo extraer el ID del objeto");
-                        // Intentemos obtener la acción actual
-                        if (function_exists('jet_fb_action_handler') && method_exists(jet_fb_action_handler(), 'get_current_action')) {
-                            $current_action = jet_fb_action_handler()->get_current_action();
-                            if ($current_action && property_exists($current_action, 'inserted_id')) {
-                                $post_id = $current_action->inserted_id;
-                                $this->main->log_debug("ID extraído de current_action->inserted_id: $post_id");
+                    $this->main->log_debug("No se pudo extraer el ID del objeto");
+                    // Intentemos obtener la acción actual
+                    if (function_exists('jet_fb_action_handler') && method_exists(jet_fb_action_handler(), 'get_current_action')) {
+                        $current_action = jet_fb_action_handler()->get_current_action();
+                        if ($current_action && property_exists($current_action, 'inserted_id')) {
+                            $post_id = $current_action->inserted_id;
+                            $this->main->log_debug("ID extraído de current_action->inserted_id: $post_id");
                             }
                         }
                     }
@@ -1149,7 +1149,7 @@ class JetForm_Media_Gallery_Process {
             }
         }
         
-        return $post_id;
+            return $post_id;
     }
     
     /**

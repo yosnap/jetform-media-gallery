@@ -473,6 +473,18 @@ class JetForm_Media_Gallery_Admin {
             ];
         }
         ?>
+        <div class="shortcode-instructions" style="margin-bottom: 20px; padding: 15px; background: #f0f9ff; border-left: 4px solid #2271b1;">
+            <h3 style="margin-top: 0;"><?php _e('Uso de los campos', 'jetform-media-gallery'); ?></h3>
+            <ol>
+                <li><?php _e('Configura los campos que necesitas para tu formulario.', 'jetform-media-gallery'); ?></li>
+                <li><?php _e('Guarda la configuración.', 'jetform-media-gallery'); ?></li>
+                <li><?php _e('Copia el shortcode generado para cada campo.', 'jetform-media-gallery'); ?></li>
+                <li><?php _e('En tu formulario JetFormBuilder, añade un campo HTML personalizado.', 'jetform-media-gallery'); ?></li>
+                <li><?php _e('Pega el shortcode en el campo HTML.', 'jetform-media-gallery'); ?></li>
+            </ol>
+            <p><strong><?php _e('Importante:', 'jetform-media-gallery'); ?></strong> <?php _e('No modifiques manualmente los shortcodes. Usa siempre los generados por esta página para asegurar la correcta configuración.', 'jetform-media-gallery'); ?></p>
+        </div>
+        
         <div id="image-fields-container">
             <?php foreach ($fields as $index => $field) : ?>
             <div class="image-field-row" style="margin-bottom: 20px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">

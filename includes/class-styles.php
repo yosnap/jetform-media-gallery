@@ -83,6 +83,9 @@ class JetForm_Media_Gallery_Styles {
                 padding: 15px;
                 border-radius: 5px;
                 background: #fff;
+                display: flex;
+                flex-direction: column;
+                height: auto;
             }
 
             .section-title {
@@ -94,21 +97,26 @@ class JetForm_Media_Gallery_Styles {
                 display: flex;
                 flex-direction: column;
                 gap: 15px;
+                flex: 1;
+                justify-content: flex-start;
             }
             
             .image-preview {
-                display: none;
                 width: {$width}px;
                 height: {$height}px;
                 position: relative;
                 margin-top: 10px;
-            }
-            
-            .image-preview.has-image {
-                display: block;
                 background-size: cover;
                 background-position: center;
                 border-radius: 4px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            
+            .image-preview.has-image {
+                background-size: cover;
+                background-position: center;
+                border: none;
+                background-color: transparent;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
             
@@ -136,6 +144,12 @@ class JetForm_Media_Gallery_Styles {
                 flex-wrap: wrap;
                 gap: 15px;
                 margin-top: 10px;
+            }
+            
+            .images-preview:not(:empty) {
+                border: none;
+                background-color: transparent;
+                padding: 0;
             }
             
             .gallery-image {

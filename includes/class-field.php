@@ -106,13 +106,13 @@ class JetForm_Media_Gallery_Field {
                                 </button>
                             <?php endif; ?>
                             
-                            <div id="featured-image-preview-<?php echo esc_attr($field_config['name']); ?>" class="image-preview <?php echo !empty($initial_value) ? 'has-image' : ''; ?>"
-                                <?php if (!empty($initial_value)) : ?>
-                                    style="background-image: url('<?php echo wp_get_attachment_url($initial_value); ?>');"
-                                <?php endif; ?>>
-                                <div class="image-overlay"></div>
-                                <button type="button" class="remove-featured-image" style="<?php echo !empty($initial_value) ? '' : 'display: none;'; ?>">×</button>
-                            </div>
+                            <?php if (!empty($initial_value)) : ?>
+                                <div id="featured-image-preview-<?php echo esc_attr($field_config['name']); ?>" class="image-preview has-image"
+                                     style="background-image: url('<?php echo wp_get_attachment_url($initial_value); ?>');">
+                                    <div class="image-overlay"></div>
+                                    <button type="button" class="remove-featured-image">×</button>
+                                </div>
+                            <?php endif; ?>
                             
                             <?php if ($settings['select_button_order'] === 'after') : ?>
                                 <button type="button" class="button upload-featured-image" data-field="<?php echo esc_attr($field_config['name']); ?>">
@@ -139,8 +139,8 @@ class JetForm_Media_Gallery_Field {
                                 </button>
                             <?php endif; ?>
                             
-                            <div id="gallery-images-preview-<?php echo esc_attr($field_config['name']); ?>" class="images-preview">
-                                <?php if (!empty($initial_images)) : ?>
+                            <?php if (!empty($initial_images)) : ?>
+                                <div id="gallery-images-preview-<?php echo esc_attr($field_config['name']); ?>" class="images-preview">
                                     <?php foreach ($initial_images as $img_id) : 
                                         if (empty($img_id)) continue;
                                         $img_url = wp_get_attachment_url($img_id); 
@@ -151,8 +151,10 @@ class JetForm_Media_Gallery_Field {
                                             <button type="button" class="remove-image">×</button>
                                         </div>
                                     <?php endforeach; ?>
-                                <?php endif; ?>
-                            </div>
+                                </div>
+                            <?php else: ?>
+                                <div id="gallery-images-preview-<?php echo esc_attr($field_config['name']); ?>" class="images-preview" style="display:none;"></div>
+                            <?php endif; ?>
                             
                             <?php if ($settings['select_button_order'] === 'after') : ?>
                                 <button type="button" class="button upload-gallery-images" data-field="<?php echo esc_attr($field_config['name']); ?>">
@@ -186,8 +188,33 @@ class JetForm_Media_Gallery_Field {
      */
     public function enqueue_scripts() {
         if (!is_admin()) {
+            // Asegurarse de que los scripts de WordPress necesarios estén disponibles
             wp_enqueue_media();
-            wp_add_inline_script('jquery', $this->get_inline_script());
+            
+            // Registrar dependencias necesarias para el objeto wp
+            wp_enqueue_script('wp-api');
+            
+            // Crear un script propio para el plugin en lugar de inline
+            wp_register_script(
+                'jetform-media-gallery',
+                JFB_MEDIA_GALLERY_URL . 'js/media-gallery.js',
+                ['jquery', 'wp-api', 'media-editor'],
+                JFB_MEDIA_GALLERY_VERSION,
+                true
+            );
+            
+            // Localizar el script con datos que pueda necesitar
+            wp_localize_script('jetform-media-gallery', 'JetFormMediaGallery', [
+                'i18n' => [
+                    'selectFeaturedImage' => __('Seleccionar imagen destacada', 'jetform-media-gallery'),
+                    'useThisImage' => __('Usar esta imagen', 'jetform-media-gallery'),
+                    'selectGalleryImages' => __('Seleccionar imágenes para galería', 'jetform-media-gallery'),
+                    'addToGallery' => __('Añadir a la galería', 'jetform-media-gallery')
+                ]
+            ]);
+            
+            // Encolar el script
+            wp_enqueue_script('jetform-media-gallery');
         }
     }
     
@@ -197,7 +224,7 @@ class JetForm_Media_Gallery_Field {
     private function get_inline_script() {
         return "
         jQuery(document).ready(function($) {
-            if (typeof wp.media === 'undefined') {
+            if (typeof wp === 'undefined' || typeof wp.media === 'undefined') {
                 console.error('Error: wp.media no está disponible. Asegúrate de cargar los scripts de medios de WordPress.');
                 return;
             }

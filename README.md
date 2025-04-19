@@ -7,6 +7,11 @@ Plugin personalizado para WordPress que agrega un campo de galería de medios pa
 - Campo de imagen destacada: Permite seleccionar una imagen como destacada para el post
 - Campo de galería: Permite seleccionar múltiples imágenes para una galería
 - Integración completa con JetFormBuilder
+- Compatible con múltiples sistemas de metadatos:
+  - WordPress nativo (meta personalizado y featured image)
+  - Advanced Custom Fields (ACF)
+  - JetEngine
+  - MetaBox
 - Soporte para la edición de posts existentes: Carga y muestra automáticamente imágenes guardadas
 - Diseño responsive y personalizable
 - Panel de administración para configurar los campos
@@ -29,17 +34,24 @@ Plugin personalizado para WordPress que agrega un campo de galería de medios pa
 
 ### En el formulario de JetFormBuilder
 
-1. Crea un nuevo formulario con JetFormBuilder o edita uno existente
-2. Añade un campo HTML personalizado
-3. Dentro del campo HTML, inserta el siguiente shortcode:
+1. Configura primero los campos en Ajustes > JFBuilder Media Fields
+2. Crea un nuevo formulario con JetFormBuilder o edita uno existente
+3. Añade un campo HTML personalizado
+4. Ve a la pestaña de JFBuilder Media Fields en la administración, selecciona el campo que deseas usar y copia el shortcode generado automáticamente
+5. Pega el shortcode en el campo HTML de tu formulario
 
+El plugin genera automáticamente el shortcode con la configuración correcta, por ejemplo:
 ```
-[media_gallery_field field="nombre_campo" required="1"]
+[media_gallery_field field="imagen_destacada" required="1"]
 ```
 
-Parámetros disponibles:
-- `field`: (requerido) Nombre del campo configurado en el panel de administración
-- `required`: (opcional) Si es requerido, usar '1' para requerido, '0' para opcional
+No es necesario escribir el shortcode manualmente, siempre usa el generado desde el panel de administración para asegurar la configuración correcta.
+
+### Parámetros del shortcode
+
+Aunque el shortcode se genera automáticamente, estos son los parámetros que utiliza:
+- `field`: Nombre del campo configurado en el panel de administración
+- `required`: Si es requerido, '1' para requerido, '0' para opcional
 
 ### Modo de edición
 
