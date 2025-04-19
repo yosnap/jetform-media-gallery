@@ -112,6 +112,12 @@ class JetForm_Media_Gallery_Field {
                                     <div class="image-overlay"></div>
                                     <button type="button" class="remove-featured-image">×</button>
                                 </div>
+                            <?php else: ?>
+                                <div id="featured-image-preview-<?php echo esc_attr($field_config['name']); ?>" class="image-preview"
+                                     style="display:none;">
+                                    <div class="image-overlay"></div>
+                                    <button type="button" class="remove-featured-image">×</button>
+                                </div>
                             <?php endif; ?>
                             
                             <?php if ($settings['select_button_order'] === 'after') : ?>
