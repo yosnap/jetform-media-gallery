@@ -752,8 +752,74 @@ class JetForm_Media_Gallery_Process {
     }
     
     /**
-     * Guardar imágenes en un post específico
+     * Normaliza el formato de almacenamiento de datos de galería según el tipo de meta.
+     * - Para JetEngine: convierte arrays a strings separados por comas
+     * - Para ACF: mantiene formato array
+     * - Para WordPress nativo y MetaBox: mantiene consistencia según configuración
+     *
+     * @param mixed $gallery_value El valor de la galería a normalizar
+     * @param string $meta_type El tipo de meta (native, jetengine, acf, metabox)
+     * @return mixed El valor normalizado según el tipo de meta
      */
+    private function normalize_gallery_format($gallery_value, $meta_type) {
+        $this->main->log_debug("Normalizando formato de galería para tipo: $meta_type - Valor original: " . (is_array($gallery_value) ? 'Array(' . count($gallery_value) . ')' : gettype($gallery_value)));
+        
+        // Primero, aseguramos que tenemos un array de IDs consistente
+        if (is_string($gallery_value)) {
+            // Si es una cadena separada por comas
+            if (strpos($gallery_value, ',') !== false) {
+                $gallery_ids = explode(',', $gallery_value);
+            } 
+            // Si es un string en formato JSON
+            else if (strpos($gallery_value, '[') === 0) {
+                $decoded = json_decode($gallery_value, true);
+                $gallery_ids = is_array($decoded) ? $decoded : [$gallery_value];
+            } 
+            // Si es un solo número
+            else if (is_numeric($gallery_value)) {
+                $gallery_ids = [$gallery_value];
+            } 
+            // Cualquier otro caso
+            else {
+                $gallery_ids = [$gallery_value];
+            }
+        } else if (is_array($gallery_value)) {
+            $gallery_ids = $gallery_value;
+        } else {
+            $gallery_ids = [];
+        }
+        
+        // Filtrar y convertir a enteros
+        $gallery_ids = array_map('intval', array_filter($gallery_ids));
+        
+        // Ahora normalizamos según el tipo de meta
+        switch ($meta_type) {
+            case 'jetengine':
+                // JetEngine funciona mejor con strings para Bricks
+                $normalized_value = implode(',', $gallery_ids);
+                $this->main->log_debug("JetEngine: Convertido a string separado por comas: $normalized_value");
+                return $normalized_value;
+                
+            case 'acf':
+                // ACF espera arrays
+                $this->main->log_debug("ACF: Manteniendo formato array con " . count($gallery_ids) . " elementos");
+                return $gallery_ids;
+                
+            case 'metabox':
+                // MetaBox puede usar ambos formatos, pero preferimos string para consistencia
+                $normalized_value = implode(',', $gallery_ids);
+                $this->main->log_debug("MetaBox: Convertido a string separado por comas: $normalized_value");
+                return $normalized_value;
+                
+            case 'native':
+            default:
+                // WordPress nativo, depende del uso pero preferimos string para consistencia
+                $normalized_value = implode(',', $gallery_ids);
+                $this->main->log_debug("WordPress native: Convertido a string separado por comas: $normalized_value");
+                return $normalized_value;
+        }
+    }
+
     public function save_images_to_post($post_id, $form_data) {
         $this->main->log_debug("=== INICIO DE GUARDADO DE IMÁGENES ===");
         $this->main->log_debug("Post ID: $post_id");
@@ -860,6 +926,7 @@ class JetForm_Media_Gallery_Process {
         foreach ($fields as $field) {
             $field_name = isset($field['name']) ? $field['name'] : '';
             $meta_key = isset($field['meta_key']) ? $field['meta_key'] : '';
+            $meta_type = isset($field['meta_type']) ? $field['meta_type'] : 'native';
             
             if (!empty($field_name) && !empty($meta_key) && isset($form_data[$field_name])) {
                 $value = $form_data[$field_name];
@@ -874,11 +941,12 @@ class JetForm_Media_Gallery_Process {
                         $this->main->log_debug("Guardado campo single personalizado: $meta_key con valor: $value");
                     }
                 } else {
-                    // Galería
+                    // Galería - normalizar formato según meta_type
+                    $value = $this->normalize_gallery_format($value, $meta_type);
                     $form_data['media_gallery_gallery'] = $value;
                     $gallery_meta_key = $meta_key; // Guardar la clave meta configurada
                     $gallery_found = true;
-                    $this->main->log_debug("Campo de galería configurado: $field_name -> $meta_key con valor: " . (is_array($value) ? implode(',', $value) : $value));
+                    $this->main->log_debug("Campo de galería configurado: $field_name -> $meta_key de tipo $meta_type con valor normalizado: " . (is_array($value) ? json_encode($value) : $value));
                 }
             } else if (!empty($field_name) && !empty($meta_key) && $field['type'] !== 'single' && $gallery_found && empty($form_data['media_gallery_gallery'])) {
                 // Si el campo existe en la configuración pero no en los datos del formulario y estamos en modo de edición
@@ -937,55 +1005,32 @@ class JetForm_Media_Gallery_Process {
         if ($gallery_found && !empty($form_data['media_gallery_gallery']) && !empty($gallery_meta_key)) {
             $gallery_value = $form_data['media_gallery_gallery'];
             
-            // Asegurarnos de que gallery_value sea un array de IDs
-            if (is_string($gallery_value)) {
-                // Si es una cadena separada por comas
-                if (strpos($gallery_value, ',') !== false) {
-                    $gallery_ids = explode(',', $gallery_value);
-                } 
-                // Si es un string en formato JSON
-                else if (strpos($gallery_value, '[') === 0) {
-                    $decoded = json_decode($gallery_value, true);
-                    $gallery_ids = is_array($decoded) ? $decoded : [$gallery_value];
-                } 
-                // Si es un solo número
-                else if (is_numeric($gallery_value)) {
-                    $gallery_ids = [$gallery_value];
-                } 
-                // Cualquier otro caso
-                else {
-                    $gallery_ids = [$gallery_value];
+            // Obtener el tipo de meta para este campo
+            $meta_type = 'native'; // Valor por defecto
+            foreach ($fields as $field) {
+                if (!empty($field['name']) && $field['name'] === $gallery_field_name) {
+                    $meta_type = isset($field['meta_type']) ? $field['meta_type'] : 'native';
+                    break;
                 }
-            } else if (is_array($gallery_value)) {
-                $gallery_ids = $gallery_value;
-            } else {
-                $this->main->log_debug("Valor de galería tiene un formato no reconocido: " . gettype($gallery_value));
-                $gallery_ids = [];
             }
             
-            // Filtrar y convertir a enteros
-            $gallery_ids = array_map('intval', array_filter($gallery_ids));
-            
-            if (!empty($gallery_ids)) {
-                $this->main->log_debug("Intentando guardar galería con IDs: " . implode(', ', $gallery_ids) . " en meta_key: $gallery_meta_key");
+            // Normalizar el formato según el tipo de meta
+            $normalized_value = $this->normalize_gallery_format($gallery_value, $meta_type);
                 
                 // Limpiar meta existente
                 delete_post_meta($post_id, $gallery_meta_key);
                 
-                // Guardar nueva galería
-                $result = add_post_meta($post_id, $gallery_meta_key, $gallery_ids, true);
+            // Guardar nueva galería con formato normalizado
+            $result = add_post_meta($post_id, $gallery_meta_key, $normalized_value, true);
                 
                 if (!$result) {
-                    $result = update_post_meta($post_id, $gallery_meta_key, $gallery_ids);
-                    $this->main->log_debug("Actualizada galería existente en meta_key: $gallery_meta_key");
+                $result = update_post_meta($post_id, $gallery_meta_key, $normalized_value);
+                $this->main->log_debug("Actualizada galería existente en meta_key: $gallery_meta_key con valor: " . (is_array($normalized_value) ? json_encode($normalized_value) : $normalized_value));
                 } else {
-                    $this->main->log_debug("Añadida nueva galería en meta_key: $gallery_meta_key");
+                $this->main->log_debug("Añadida nueva galería en meta_key: $gallery_meta_key con valor: " . (is_array($normalized_value) ? json_encode($normalized_value) : $normalized_value));
                 }
                 
                 $this->main->log_debug("Resultado guardado galería: " . ($result ? "éxito" : "fallo"));
-            } else {
-                $this->main->log_debug("Advertencia: Array de galería vacío después de filtrar");
-            }
         } else if ($gallery_found && !empty($gallery_meta_key)) {
             // Si el campo existe en el formulario pero está vacío, debemos eliminar la galería
             $this->main->log_debug("Galería vacía, se eliminará el meta '$gallery_meta_key'");
@@ -1006,6 +1051,18 @@ class JetForm_Media_Gallery_Process {
         clean_post_cache($post_id);
         wp_cache_delete($post_id, 'posts');
         wp_cache_delete($post_id, 'post_meta');
+        
+        // Forzar recarga de objeto post si Bricks está activo
+        if (defined('BRICKS_VERSION')) {
+            $this->main->log_debug("Bricks detectado - ejecutando limpieza adicional de caché");
+            // Eliminar caché específica de Bricks si existe
+            if (function_exists('bricks_flush_dynamic_data_cache')) {
+                bricks_flush_dynamic_data_cache($post_id);
+                $this->main->log_debug("Cache de Bricks limpiada para post ID: $post_id");
+            }
+            // Forzar una recarga completa del post
+            get_post($post_id, OBJECT, 'raw');
+        }
         
         $this->main->log_debug("=== FIN DE GUARDADO DE IMÁGENES ===");
         
