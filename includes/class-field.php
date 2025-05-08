@@ -203,13 +203,32 @@ class JetForm_Media_Gallery_Field {
             // Registrar dependencias necesarias para el objeto wp
             wp_enqueue_script('wp-api');
             
+            // Registrar jQuery UI Touch Punch para mejorar soporte táctil en dispositivos móviles
+            wp_register_script(
+                'jquery-ui-touch-punch',
+                JFB_MEDIA_GALLERY_URL . 'js/jquery.ui.touch-punch.min.js',
+                ['jquery', 'jquery-ui-sortable'],
+                '0.2.3',
+                true
+            );
+            
+            // Cargar Touch Punch para dispositivos móviles
+            wp_enqueue_script('jquery-ui-touch-punch');
+            
             // Crear un script propio para el plugin en lugar de inline
             wp_register_script(
                 'jetform-media-gallery',
                 JFB_MEDIA_GALLERY_URL . 'js/media-gallery.js',
-                ['jquery', 'wp-api', 'media-editor'],
+                ['jquery', 'wp-api', 'media-editor', 'jquery-ui-touch-punch'],
                 JFB_MEDIA_GALLERY_VERSION,
                 true
+            );
+            
+            // Detectar si es un dispositivo iOS
+            $is_ios = wp_is_mobile() && (
+                strpos($_SERVER['HTTP_USER_AGENT'], 'iPad') !== false || 
+                strpos($_SERVER['HTTP_USER_AGENT'], 'iPhone') !== false || 
+                strpos($_SERVER['HTTP_USER_AGENT'], 'iPod') !== false
             );
             
             // Localizar el script con datos que pueda necesitar
@@ -219,7 +238,9 @@ class JetForm_Media_Gallery_Field {
                     'useThisImage' => __('Usar esta imagen', 'jetform-media-gallery'),
                     'selectGalleryImages' => __('Seleccionar imágenes para galería', 'jetform-media-gallery'),
                     'addToGallery' => __('Añadir a la galería', 'jetform-media-gallery')
-                ]
+                ],
+                'is_ios' => $is_ios,
+                'is_mobile' => wp_is_mobile()
             ]);
             
             // Encolar el script

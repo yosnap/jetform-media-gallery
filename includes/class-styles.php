@@ -267,6 +267,134 @@ class JetForm_Media_Gallery_Styles {
                 font-size: 14px;
                 line-height: 1.4;
                 color: #333;
+                padding: 12px !important;
+                margin: 15px !important;
+                border-radius: 8px !important;
+                background-color: #f0f7ff !important;
+                border: 1px solid #d0e3ff !important;
+            }
+            
+            /* Estilos específicos para iOS */
+            .ios-select-button {
+                display: block;
+                width: calc(100% - 30px) !important;
+                margin: 15px !important;
+                padding: 12px !important;
+                font-size: 16px !important;
+                text-align: center;
+                border-radius: 8px !important;
+                background-color: #0073aa !important;
+                color: white !important;
+                border: none !important;
+                font-weight: bold !important;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+            }
+            
+            .ios-select-button.selecting {
+                background-color: #e63946 !important;
+            }
+            
+            .ios-confirm-button {
+                display: block;
+                width: calc(100% - 30px) !important;
+                margin: 15px !important;
+                padding: 12px !important;
+                font-size: 16px !important;
+                text-align: center;
+                border-radius: 8px !important;
+                background-color: #4CAF50 !important;
+                color: white !important;
+                border: none !important;
+                font-weight: bold !important;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+            }
+            
+            .ios-cancel-button {
+                display: block;
+                width: calc(100% - 30px) !important;
+                margin: 15px !important;
+                padding: 12px !important;
+                font-size: 16px !important;
+                text-align: center;
+                border-radius: 8px !important;
+                background-color: #f44336 !important;
+                color: white !important;
+                border: none !important;
+                font-weight: bold !important;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+            }
+            
+            .ios-enhanced .attachment {
+                width: 33.33% !important;
+                padding: 10px !important;
+                box-sizing: border-box !important;
+            }
+            
+            .ios-multiple-select-mode .attachment {
+                position: relative;
+                border: 2px solid transparent !important;
+                transition: all 0.2s ease !important;
+                margin: 5px !important;
+                cursor: pointer !important;
+            }
+            
+            .ios-multiple-select-mode .attachment.selected {
+                border: 3px solid #4CAF50 !important;
+                box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.3) !important;
+                transform: scale(0.95) !important;
+            }
+            
+            .ios-multiple-select-mode .attachment.selected:after {
+                content: "✓";
+                position: absolute;
+                top: 5px;
+                right: 5px;
+                width: 28px;
+                height: 28px;
+                background: #4CAF50;
+                color: white;
+                border-radius: 50%;
+                text-align: center;
+                line-height: 28px;
+                font-size: 16px;
+                font-weight: bold;
+                z-index: 100;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.3) !important;
+            }
+            
+            .ios-multiple-select-mode .attachment {
+                cursor: pointer !important;
+            }
+            
+            /* Mejorar el manejo táctil para arrastrar y soltar */
+            .drag-handle {
+                width: 30px !important;
+                height: 30px !important;
+                background-color: rgba(255, 255, 255, 0.9) !important;
+                border: 1px solid rgba(0, 0, 0, 0.1) !important;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
+            }
+            
+            .ui-sortable-helper {
+                transform: scale(1.05) !important;
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2) !important;
+                z-index: 9999 !important;
+            }
+            
+            /* Mejoras específicas para arrastrar en iOS */
+            .gallery-image {
+                -webkit-touch-callout: none !important;
+                -webkit-user-select: none !important;
+                -khtml-user-select: none !important;
+                -moz-user-select: none !important;
+                -ms-user-select: none !important;
+                user-select: none !important;
+                touch-action: none !important;
+            }
+            
+            .gallery-image-placeholder {
+                border: 2px dashed #0073aa !important;
+                background-color: rgba(0, 115, 170, 0.1) !important;
             }
         }';
         

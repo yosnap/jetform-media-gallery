@@ -17,6 +17,9 @@
     // Detectar si es un dispositivo móvil
     var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
+    // Detectar específicamente si es iOS
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    
     $(document).ready(function() {
         // Inicializar campos con valores existentes si estamos en modo edición
         $('.media-gallery-field').each(function() {
@@ -63,7 +66,7 @@
                 
                 // Inicializar sortable para permitir reordenar las imágenes
                 if (typeof $.fn.sortable !== 'undefined') {
-                    galleryPreview.sortable({
+                    var sortableOptions = {
                         items: '.gallery-image',
                         cursor: 'move',
                         opacity: 0.7,
@@ -77,7 +80,110 @@
                             });
                             $('#gallery-images-input-' + fieldName).val(newOrder.join(','));
                         }
-                    });
+                    };
+                    
+                    // Configuraciones específicas para móviles
+                    if (isMobile) {
+                        // Mejora para dispositivos táctiles
+                        sortableOptions.delay = 150;
+                        sortableOptions.distance = 10;
+                        sortableOptions.scroll = false;
+                        
+                        // Configuraciones específicas para iOS
+                        if (isIOS) {
+                            sortableOptions.handle = '.drag-handle';
+                            sortableOptions.helper = 'clone';
+                            sortableOptions.appendTo = 'body';
+                            sortableOptions.zIndex = 9999;
+                            sortableOptions.tolerance = 'intersect';
+                        }
+                    }
+                    
+                    galleryPreview.sortable(sortableOptions);
+                    
+                    // Para iOS, necesitamos inicializar el touch-punch
+                    if (isIOS && typeof $.fn.draggable !== 'undefined') {
+                        // Inicializar jQuery UI Touch Punch
+                        (function($) {
+                            if ($.support && $.support.touch !== undefined) return;
+                            
+                            $.support = $.support || {};
+                            $.support.touch = 'ontouchend' in document;
+                            
+                            if (!$.support.touch) return;
+                            
+                            var mouseProto = $.ui.mouse.prototype,
+                                _mouseInit = mouseProto._mouseInit,
+                                _mouseDestroy = mouseProto._mouseDestroy,
+                                touchHandled;
+                            
+                            mouseProto._mouseInit = function() {
+                                var self = this;
+                                self.element.bind({
+                                    'touchstart.jQueryUiTouchPunch': function(event) { return self._touchStart(event); },
+                                    'touchmove.jQueryUiTouchPunch': function(event) { return self._touchMove(event); },
+                                    'touchend.jQueryUiTouchPunch': function(event) { return self._touchEnd(event); }
+                                });
+                                _mouseInit.call(self);
+                            };
+                            
+                            mouseProto._mouseDestroy = function() {
+                                var self = this;
+                                self.element.unbind({
+                                    'touchstart.jQueryUiTouchPunch': self._touchStart,
+                                    'touchmove.jQueryUiTouchPunch': self._touchMove,
+                                    'touchend.jQueryUiTouchPunch': self._touchEnd
+                                });
+                                _mouseDestroy.call(self);
+                            };
+                            
+                            mouseProto._touchStart = function(event) {
+                                var self = this;
+                                if (touchHandled || !self._mouseCapture(event.originalEvent.changedTouches[0])) return;
+                                
+                                touchHandled = true;
+                                self._touchMoved = false;
+                                
+                                event.preventDefault();
+                                
+                                var touch = event.originalEvent.changedTouches[0];
+                                var simulatedEvent = document.createEvent('MouseEvents');
+                                simulatedEvent.initMouseEvent('mousedown', true, true, window, 1,
+                                    touch.screenX, touch.screenY, touch.clientX, touch.clientY,
+                                    false, false, false, false, 0, null);
+                                self.element[0].dispatchEvent(simulatedEvent);
+                            };
+                            
+                            mouseProto._touchMove = function(event) {
+                                if (!touchHandled) return;
+                                
+                                this._touchMoved = true;
+                                
+                                var touch = event.originalEvent.changedTouches[0];
+                                var simulatedEvent = document.createEvent('MouseEvents');
+                                simulatedEvent.initMouseEvent('mousemove', true, true, window, 1,
+                                    touch.screenX, touch.screenY, touch.clientX, touch.clientY,
+                                    false, false, false, false, 0, null);
+                                this.element[0].dispatchEvent(simulatedEvent);
+                                
+                                event.preventDefault();
+                            };
+                            
+                            mouseProto._touchEnd = function(event) {
+                                if (!touchHandled) return;
+                                
+                                var touch = event.originalEvent.changedTouches[0];
+                                var simulatedEvent = document.createEvent('MouseEvents');
+                                simulatedEvent.initMouseEvent(this._touchMoved ? 'mouseup' : 'click', true, true, window, 1,
+                                    touch.screenX, touch.screenY, touch.clientX, touch.clientY,
+                                    false, false, false, false, 0, null);
+                                this.element[0].dispatchEvent(simulatedEvent);
+                                
+                                touchHandled = false;
+                                this._touchMoved = false;
+                            };
+                        })(jQuery);
+                    }
                 }
             }
         });
@@ -162,6 +268,17 @@
                 galleryFrameOptions.library = { type: 'image' };
                 galleryFrameOptions.frame = 'select';
                 galleryFrameOptions.state = 'library';
+                
+                // Configuraciones específicas para iOS
+                if (isIOS) {
+                    // Forzar el modo de selección múltiple en iOS
+                    galleryFrameOptions.multiple = true;
+                    
+                    // Añadir un pequeño retraso para iOS
+                    setTimeout(function() {
+                        $('.media-frame-content .attachments-browser').addClass('ios-enhanced');
+                    }, 800);
+                }
             }
             
             var galleryFrame = wp.media(galleryFrameOptions);
@@ -179,12 +296,140 @@
                     }
                 });
                 
-                // En móviles, mostrar mensaje de ayuda
+                // En móviles, mostrar mensaje de ayuda y mejorar la interfaz
                 if (isMobile) {
                     setTimeout(function() {
-                        var helpMessage = $('<div class="mobile-upload-help" style="padding: 10px; background: #f7f7f7; margin: 10px; border-radius: 4px; text-align: center;">Para seleccionar múltiples imágenes, mantén presionada cada imagen que desees incluir.</div>');
+                        // Mensaje de ayuda específico para iOS
+                        var helpText = isIOS ? 
+                            'Para seleccionar múltiples imágenes a la vez, toca el botón "Seleccionar múltiples imágenes", marca todas las que desees y luego toca "Confirmar selección".' : 
+                            'Para seleccionar múltiples imágenes, mantén presionada cada imagen que desees incluir.';
+                        
+                        var helpMessage = $('<div class="mobile-upload-help" style="padding: 10px; background: #f7f7f7; margin: 10px; border-radius: 4px; text-align: center;">' + helpText + '</div>');
                         $('.media-frame-content').prepend(helpMessage);
-                    }, 500);
+                        
+                        // Para iOS, añadir botón de selección múltiple
+                        if (isIOS) {
+                            var selectButton = $('<button type="button" class="ios-select-button button" style="margin: 10px; display: block; width: calc(100% - 20px);">Seleccionar múltiples imágenes</button>');
+                            $('.mobile-upload-help').after(selectButton);
+                            
+                            // Añadir botón para confirmar selección múltiple
+                            var confirmButton = $('<button type="button" class="ios-confirm-button button" style="margin: 10px; display: none; width: calc(100% - 20px); background-color: #4CAF50 !important;">Confirmar selección (0)</button>');
+                            selectButton.after(confirmButton);
+                            
+                            // Variable para almacenar las imágenes seleccionadas
+                            var selectedImages = [];
+                            
+                            selectButton.on('click', function() {
+                                // Activar modo de selección múltiple
+                                $('.attachments-browser').addClass('ios-multiple-select-mode');
+                                $(this).text('Seleccionando imágenes...').addClass('selecting');
+                                confirmButton.show();
+                                
+                                // Desactivar el botón "Añadir a la galería" durante la selección múltiple
+                                $('.media-toolbar-primary .button').prop('disabled', true);
+                                
+                                // Limpiar selecciones previas
+                                selectedImages = [];
+                                confirmButton.text('Confirmar selección (0)');
+                                $('.attachments .attachment.selected').removeClass('selected');
+                                
+                                // Hacer que los attachments sean seleccionables con un toque
+                                $('.attachments .attachment').off('click.ios-select').on('click.ios-select', function(e) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    
+                                    var $this = $(this);
+                                    $this.toggleClass('selected');
+                                    
+                                    // Obtener el ID del adjunto
+                                    var attachmentId = $this.data('id');
+                                    
+                                    // Si está seleccionado, añadirlo a la lista
+                                    if ($this.hasClass('selected')) {
+                                        // Verificar si ya existe en la lista
+                                        if (selectedImages.indexOf(attachmentId) === -1) {
+                                            selectedImages.push(attachmentId);
+                                        }
+                                    } else {
+                                        // Si no está seleccionado, quitarlo de la lista
+                                        var index = selectedImages.indexOf(attachmentId);
+                                        if (index !== -1) {
+                                            selectedImages.splice(index, 1);
+                                        }
+                                    }
+                                    
+                                    // Actualizar contador en el botón de confirmar
+                                    confirmButton.text('Confirmar selección (' + selectedImages.length + ')');
+                                });
+                            });
+                            
+                            // Manejar la confirmación de selección múltiple
+                            confirmButton.on('click', function() {
+                                if (selectedImages.length > 0) {
+                                    // Limpiar selección actual
+                                    selection.reset();
+                                    
+                                    // Añadir todas las imágenes seleccionadas
+                                    selectedImages.forEach(function(id) {
+                                        var attachment = wp.media.attachment(id);
+                                        attachment.fetch();
+                                        selection.add(attachment);
+                                    });
+                                    
+                                    // Volver al modo normal
+                                    $('.attachments-browser').removeClass('ios-multiple-select-mode');
+                                    selectButton.text('Seleccionar múltiples imágenes').removeClass('selecting');
+                                    confirmButton.hide();
+                                    
+                                    // Reactivar el botón "Añadir a la galería"
+                                    $('.media-toolbar-primary .button').prop('disabled', false);
+                                    
+                                    // Simular clic en el botón "Añadir a la galería"
+                                    setTimeout(function() {
+                                        $('.media-toolbar-primary .button').click();
+                                    }, 100);
+                                } else {
+                                    alert('Por favor, selecciona al menos una imagen');
+                                }
+                            });
+                            
+                            // Añadir botón para cancelar selección
+                            var cancelButton = $('<button type="button" class="ios-cancel-button button" style="margin: 10px; display: none; width: calc(100% - 20px); background-color: #f44336 !important;">Cancelar selección</button>');
+                            confirmButton.after(cancelButton);
+                            
+                            cancelButton.on('click', function() {
+                                // Volver al modo normal
+                                $('.attachments-browser').removeClass('ios-multiple-select-mode');
+                                selectButton.text('Seleccionar múltiples imágenes').removeClass('selecting');
+                                confirmButton.hide();
+                                cancelButton.hide();
+                                
+                                // Limpiar selecciones
+                                $('.attachments .attachment.selected').removeClass('selected');
+                                
+                                // Reactivar el botón "Añadir a la galería"
+                                $('.media-toolbar-primary .button').prop('disabled', false);
+                            });
+                            
+                            // Mostrar el botón de cancelar cuando se activa el modo de selección
+                            selectButton.on('click', function() {
+                                cancelButton.show();
+                            });
+                        }
+                        
+                        // Mejorar la visualización de la biblioteca de medios en móviles
+                        $('.media-frame-content').css({
+                            'overflow-y': 'auto',
+                            '-webkit-overflow-scrolling': 'touch'
+                        });
+                        
+                        // Hacer que los botones sean más grandes en móviles
+                        $('.media-toolbar-primary button, .media-toolbar-secondary button').css({
+                            'padding': '12px 15px',
+                            'font-size': '16px',
+                            'height': 'auto'
+                        });
+                    }, 800);
                 }
             });
             
