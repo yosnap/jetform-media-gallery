@@ -40,6 +40,93 @@
                 }
             }
             
+            // Inicializar sortable para galerías existentes
+            if ($(this).find('.gallery-container').length > 0) {
+                fieldName = $(this).find('.upload-gallery-images').data('field');
+                var galleryPreview = $('#gallery-images-preview-' + fieldName);
+                
+                // Asegurarse de que todas las imágenes existentes tengan el manejador de arrastre
+                galleryPreview.find('.gallery-image').each(function() {
+                    if ($(this).find('.drag-handle').length === 0) {
+                        $(this).append('<div class="drag-handle" title="Arrastrar para ordenar"></div>');
+                    }
+                });
+                
+                // Inicializar sortable para permitir reordenar las imágenes existentes
+                if (typeof $.fn.sortable !== 'undefined' && galleryPreview.find('.gallery-image').length > 0) {
+                    // Inicializar sortable
+                    galleryPreview.sortable({
+                        items: '.gallery-image',
+                        cursor: 'move',
+                        opacity: 0.7,
+                        handle: '.drag-handle',
+                        placeholder: 'gallery-image-placeholder',
+                        tolerance: 'pointer',
+                        update: function() {
+                            // Actualizar el orden de las imágenes en el campo oculto
+                            var updatedOrder = [];
+                            galleryPreview.find('.gallery-image').each(function() {
+                                updatedOrder.push($(this).data('id'));
+                            });
+                            $('#gallery-images-input-' + fieldName).val(updatedOrder.join(','));
+                        }
+                    });
+                }
+            }
+            
+            // Inicializar sortable para galerías existentes
+            if ($(this).find('.gallery-container').length > 0) {
+                var galleryContainer = $(this).find('.gallery-container');
+                var galleryPreview = galleryContainer.find('.images-preview');
+                
+                // Inicializar sortable para permitir reordenar las imágenes existentes
+                if (typeof $.fn.sortable !== 'undefined' && galleryPreview.find('.gallery-image').length > 0) {
+                    var sortableOptions = {
+                        items: '.gallery-image',
+                        cursor: 'move',
+                        opacity: 0.7,
+                        placeholder: 'gallery-image-placeholder',
+                        tolerance: 'pointer',
+                        update: function() {
+                            // Actualizar el orden de las imágenes en el campo oculto
+                            var newOrder = [];
+                            galleryPreview.find('.gallery-image').each(function() {
+                                newOrder.push($(this).data('id'));
+                            });
+                            var fieldName = galleryContainer.find('.upload-gallery-images').data('field');
+                            $('#gallery-images-input-' + fieldName).val(newOrder.join(','));
+                        }
+                    };
+                    
+                    // Configuraciones específicas para móviles
+                    if (isMobile) {
+                        // Mejora para dispositivos táctiles
+                        sortableOptions.delay = 150;
+                        sortableOptions.distance = 10;
+                        sortableOptions.scroll = false;
+                        
+                        // Configuraciones específicas para iOS
+                        if (isIOS) {
+                            sortableOptions.handle = '.drag-handle';
+                            sortableOptions.helper = 'clone';
+                            sortableOptions.appendTo = 'body';
+                            sortableOptions.zIndex = 9999;
+                            sortableOptions.tolerance = 'intersect';
+                        }
+                    }
+                    
+                    galleryPreview.sortable(sortableOptions);
+                    galleryPreview.addClass('sortable-enabled');
+                    
+                    // Asegurarse de que todas las imágenes existentes tengan el manejador de arrastre
+                    galleryPreview.find('.gallery-image').each(function() {
+                        if ($(this).find('.drag-handle').length === 0) {
+                            $(this).append('<span class="drag-handle"></span>');
+                        }
+                    });
+                }
+            }
+            
             // Procesar campos de galería
             if ($(this).find('.gallery-container').length > 0) {
                 fieldName = $(this).find('.upload-gallery-images').data('field');
@@ -464,19 +551,26 @@
                     var existingIds = currentIds;
                     var newIds = [];
                     
-                    // Primero, añadir las imágenes existentes que no están en la nueva selección
+                    // Primero, obtener las imágenes existentes y su orden
                     if (!galleryPreview.is(':empty')) {
                         // Conservar las imágenes existentes y su orden
                         existingIds = [];
                         galleryPreview.find('.gallery-image').each(function() {
                             existingIds.push($(this).data('id').toString());
                         });
+                        
+                        // Inicializar newIds con las imágenes existentes para mantenerlas
+                        newIds = existingIds.slice();
                     }
                     
                     // Añadir las nuevas imágenes seleccionadas
                     attachments.forEach(function(attachment) {
                         var attachmentId = attachment.id.toString();
-                        newIds.push(attachmentId);
+                        
+                        // Solo añadir el ID si no existe ya en la lista
+                        if (newIds.indexOf(attachmentId) === -1) {
+                            newIds.push(attachmentId);
+                        }
                         
                         // Verificar si la imagen ya existe en la galería
                         if (existingIds.indexOf(attachmentId) === -1) {
@@ -490,8 +584,34 @@
                         }
                     });
                     
-                    // Actualizar el valor del campo oculto con todas las imágenes
+                    // Actualizar el valor del campo oculto con todas las imágenes (existentes + nuevas)
                     inputField.val(newIds.join(','));
+                    
+                    // Reinicializar sortable después de añadir nuevas imágenes
+                    if (typeof $.fn.sortable !== 'undefined') {
+                        // Destruir el sortable existente si ya está inicializado
+                        if (galleryPreview.hasClass('ui-sortable')) {
+                            galleryPreview.sortable('destroy');
+                        }
+                        
+                        // Inicializar sortable con opciones optimizadas
+                        galleryPreview.sortable({
+                            items: '.gallery-image',
+                            cursor: 'move',
+                            opacity: 0.7,
+                            handle: '.drag-handle',
+                            placeholder: 'gallery-image-placeholder',
+                            tolerance: 'pointer',
+                            update: function() {
+                                // Actualizar el orden de las imágenes en el campo oculto
+                                var updatedOrder = [];
+                                galleryPreview.find('.gallery-image').each(function() {
+                                    updatedOrder.push($(this).data('id'));
+                                });
+                                inputField.val(updatedOrder.join(','));
+                            }
+                        });
+                    }
                     
                     // Reinicializar sortable después de añadir nuevas imágenes
                     if (typeof $.fn.sortable !== 'undefined') {
