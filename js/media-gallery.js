@@ -14,6 +14,9 @@
         return;
     }
     
+    // Detectar si es un dispositivo móvil
+    var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
     $(document).ready(function() {
         // Inicializar campos con valores existentes si estamos en modo edición
         $('.media-gallery-field').each(function() {
@@ -57,6 +60,25 @@
                         $(this).remove();
                     });
                 });
+                
+                // Inicializar sortable para permitir reordenar las imágenes
+                if (typeof $.fn.sortable !== 'undefined') {
+                    galleryPreview.sortable({
+                        items: '.gallery-image',
+                        cursor: 'move',
+                        opacity: 0.7,
+                        placeholder: 'gallery-image-placeholder',
+                        tolerance: 'pointer',
+                        update: function() {
+                            // Actualizar el orden de las imágenes en el campo oculto
+                            var newOrder = [];
+                            galleryPreview.find('.gallery-image').each(function() {
+                                newOrder.push($(this).data('id'));
+                            });
+                            $('#gallery-images-input-' + fieldName).val(newOrder.join(','));
+                        }
+                    });
+                }
             }
         });
         
@@ -123,15 +145,26 @@
             var controlsContainer = $(this).closest('.gallery-controls');
             var previewSelector = '#gallery-images-preview-' + fieldName;
             var inputField = $('#gallery-images-input-' + fieldName);
-            var currentIds = inputField.val() ? inputField.val().split(',') : [];
+            var currentIds = inputField.val() ? inputField.val().split(',').filter(Boolean) : [];
             
-            var galleryFrame = wp.media({
+            // Configuración optimizada para móviles
+            var galleryFrameOptions = {
                 title: JetFormMediaGallery.i18n.selectGalleryImages || 'Seleccionar imágenes para galería',
                 button: {
                     text: JetFormMediaGallery.i18n.addToGallery || 'Añadir a la galería'
                 },
                 multiple: true
-            });
+            };
+            
+            // Optimizaciones específicas para móviles
+            if (isMobile) {
+                // En móviles, aseguramos que la biblioteca se abre en modo "Subir archivos" por defecto
+                galleryFrameOptions.library = { type: 'image' };
+                galleryFrameOptions.frame = 'select';
+                galleryFrameOptions.state = 'library';
+            }
+            
+            var galleryFrame = wp.media(galleryFrameOptions);
             
             // Preseleccionar imágenes existentes
             galleryFrame.on('open', function() {
@@ -145,6 +178,14 @@
                         selection.add(attachment ? [attachment] : []);
                     }
                 });
+                
+                // En móviles, mostrar mensaje de ayuda
+                if (isMobile) {
+                    setTimeout(function() {
+                        var helpMessage = $('<div class="mobile-upload-help" style="padding: 10px; background: #f7f7f7; margin: 10px; border-radius: 4px; text-align: center;">Para seleccionar múltiples imágenes, mantén presionada cada imagen que desees incluir.</div>');
+                        $('.media-frame-content').prepend(helpMessage);
+                    }, 500);
+                }
             });
             
             galleryFrame.on('select', function() {
@@ -155,25 +196,62 @@
                     if ($(previewSelector).length === 0) {
                         controlsContainer.append('<div id="gallery-images-preview-' + fieldName + '" class="images-preview"></div>');
                     } else {
-                        $(previewSelector).empty().show();
+                        // No vaciar el contenedor para mantener las imágenes existentes
+                        $(previewSelector).show();
                     }
                     
                     var galleryPreview = $(previewSelector);
+                    var existingIds = currentIds;
                     var newIds = [];
                     
+                    // Primero, añadir las imágenes existentes que no están en la nueva selección
+                    if (!galleryPreview.is(':empty')) {
+                        // Conservar las imágenes existentes y su orden
+                        existingIds = [];
+                        galleryPreview.find('.gallery-image').each(function() {
+                            existingIds.push($(this).data('id').toString());
+                        });
+                    }
+                    
+                    // Añadir las nuevas imágenes seleccionadas
                     attachments.forEach(function(attachment) {
-                        newIds.push(attachment.id);
+                        var attachmentId = attachment.id.toString();
+                        newIds.push(attachmentId);
                         
-                        galleryPreview.append(
-                            '<div class="gallery-image" data-id="' + attachment.id + '" style="background-image: url(\'' + attachment.url + '\')">' +
-                            '<div class="image-overlay"></div>' +
-                            '<button type="button" class="remove-image">×</button>' +
-                            '</div>'
-                        );
+                        // Verificar si la imagen ya existe en la galería
+                        if (existingIds.indexOf(attachmentId) === -1) {
+                            galleryPreview.append(
+                                '<div class="gallery-image" data-id="' + attachment.id + '" style="background-image: url(\'' + attachment.url + '\')">' +
+                                '<div class="image-overlay"></div>' +
+                                '<div class="drag-handle" title="Arrastrar para ordenar"></div>' +
+                                '<button type="button" class="remove-image">×</button>' +
+                                '</div>'
+                            );
+                        }
                     });
                     
-                    // Actualizar el valor del campo oculto
+                    // Actualizar el valor del campo oculto con todas las imágenes
                     inputField.val(newIds.join(','));
+                    
+                    // Reinicializar sortable después de añadir nuevas imágenes
+                    if (typeof $.fn.sortable !== 'undefined') {
+                        galleryPreview.sortable('destroy').sortable({
+                            items: '.gallery-image',
+                            cursor: 'move',
+                            opacity: 0.7,
+                            placeholder: 'gallery-image-placeholder',
+                            tolerance: 'pointer',
+                            handle: '.drag-handle',
+                            update: function() {
+                                // Actualizar el orden de las imágenes en el campo oculto
+                                var updatedOrder = [];
+                                galleryPreview.find('.gallery-image').each(function() {
+                                    updatedOrder.push($(this).data('id'));
+                                });
+                                inputField.val(updatedOrder.join(','));
+                            }
+                        });
+                    }
                 }
             });
             

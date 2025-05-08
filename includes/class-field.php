@@ -197,6 +197,9 @@ class JetForm_Media_Gallery_Field {
             // Asegurarse de que los scripts de WordPress necesarios estén disponibles
             wp_enqueue_media();
             
+            // Cargar jQuery UI para la funcionalidad de ordenamiento
+            wp_enqueue_script('jquery-ui-sortable');
+            
             // Registrar dependencias necesarias para el objeto wp
             wp_enqueue_script('wp-api');
             
