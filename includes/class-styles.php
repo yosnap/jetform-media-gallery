@@ -49,6 +49,13 @@ class JetForm_Media_Gallery_Styles {
         $button_border_radius = isset($settings['button_border_radius']) ? absint($settings['button_border_radius']) : 4;
         $button_padding = isset($settings['button_padding']) ? sanitize_text_field($settings['button_padding']) : '10px 16px';
         
+        // Valores personalizados para el icono de ordenamiento
+        $drag_handle_color = isset($settings['drag_handle_color']) ? sanitize_hex_color($settings['drag_handle_color']) : '#323232';
+        $drag_handle_size = isset($settings['drag_handle_size']) ? absint($settings['drag_handle_size']) : 24;
+        $drag_handle_opacity = isset($settings['drag_handle_opacity']) ? floatval($settings['drag_handle_opacity']) : 0.85;
+        $drag_handle_position = isset($settings['drag_handle_position']) ? sanitize_text_field($settings['drag_handle_position']) : 'top-left';
+        $drag_handle_lines_color = isset($settings['drag_handle_lines_color']) ? sanitize_hex_color($settings['drag_handle_lines_color']) : '#ffffff';
+        
         // Posicionamiento del botón eliminar
         $position_styles = 'top: 50%; left: 50%; transform: translate(-50%, -50%);';
         if ($position === 'top-right') {
@@ -134,16 +141,24 @@ class JetForm_Media_Gallery_Styles {
         
         /* Estilos para el ordenamiento de imágenes */
         .gallery-image-placeholder {
-            border: 2px dashed #ccc;
-            background-color: #f9f9f9;
+            border: 2px dashed #0073aa;
+            background-color: rgba(0, 115, 170, 0.1);
             height: ' . $height . 'px;
             width: ' . $width . 'px;
             margin: 5px;
             border-radius: 4px;
+            visibility: visible !important;
+        }
+        
+        .being-dragged {
+            z-index: 9999;
+            opacity: 0.9;
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
         
         .gallery-image {
-            cursor: move;
+            cursor: default;
             position: relative;
             width: ' . $width . 'px;
             height: ' . $height . 'px;
@@ -156,17 +171,41 @@ class JetForm_Media_Gallery_Styles {
         
         .drag-handle {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            width: 20px;
-            height: 20px;
-            background-color: rgba(255, 255, 255, 0.8);
-            border-radius: 3px;
+            width: ' . $drag_handle_size . 'px;
+            height: ' . $drag_handle_size . 'px;
+            background-color: ' . $drag_handle_color . ';
+            border-radius: 4px;
             z-index: 3;
             cursor: move;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            padding: 3px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            opacity: ' . $drag_handle_opacity . ';
+            ' . $this->get_drag_handle_position_styles($drag_handle_position) . '
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .drag-handle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Líneas para indicar que es un elemento arrastrable */
+        .drag-handle:before {
+            content: "";
+            display: block;
+            width: 60%;
+            height: 2px;
+            background-color: ' . $drag_handle_lines_color . ';
+            border-radius: 1px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 -4px 0 ' . $drag_handle_lines_color . ', 0 4px 0 ' . $drag_handle_lines_color . ';
         }
         
         .images-preview {
@@ -384,11 +423,60 @@ class JetForm_Media_Gallery_Styles {
             
             /* Mejorar el manejo táctil para arrastrar y soltar */
             .drag-handle {
-                width: 30px !important;
-                height: 30px !important;
-                background-color: rgba(255, 255, 255, 0.9) !important;
-                border: 1px solid rgba(0, 0, 0, 0.1) !important;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
+                width: ' . ($drag_handle_size * 1.5) . 'px !important;
+                height: ' . ($drag_handle_size * 1.5) . 'px !important;
+                background-color: ' . $drag_handle_color . ' !important;
+                border: none !important;
+                box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) !important;
+                border-radius: 6px !important;
+                padding: 6px !important;
+                opacity: ' . min(1, $drag_handle_opacity + 0.1) . ' !important;
+                ' . $this->get_drag_handle_position_styles($drag_handle_position) . '
+                transform: scale(1) !important;
+                transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+            }
+            
+            /* Efecto de pulsación en móviles */
+            .drag-handle:active {
+                transform: scale(0.95) !important;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2) !important;
+            }
+            
+            /* Añadir un indicador visual para móviles */
+            .gallery-image .drag-handle::after {
+                content: "Tocar y arrastrar" !important;
+                position: absolute !important;
+                bottom: -25px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                background-color: rgba(0, 0, 0, 0.7) !important;
+                color: white !important;
+                padding: 3px 8px !important;
+                border-radius: 3px !important;
+                font-size: 10px !important;
+                white-space: nowrap !important;
+                opacity: 0 !important;
+                transition: opacity 0.3s ease !important;
+                pointer-events: none !important;
+            }
+            
+            .gallery-image .drag-handle:active::after {
+                opacity: 1 !important;
+            }
+            
+            /* Líneas para el drag handle en móviles */
+            .drag-handle:before {
+                content: "" !important;
+                display: block !important;
+                width: 60% !important;
+                height: 3px !important;
+                background-color: ' . $drag_handle_lines_color . ' !important;
+                border-radius: 1.5px !important;
+                position: absolute !important;
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                box-shadow: 0 -6px 0 ' . $drag_handle_lines_color . ', 0 6px 0 ' . $drag_handle_lines_color . ' !important;
             }
             
             .ui-sortable-helper {
@@ -439,5 +527,27 @@ class JetForm_Media_Gallery_Styles {
         
         // Convertir de nuevo a hex
         return '#' . sprintf('%02x%02x%02x', $r, $g, $b);
+    }
+    
+    /**
+     * Obtiene los estilos CSS para la posición del icono de ordenamiento
+     * @param string $position Posición del icono (top-left, top-right, bottom-left, bottom-right, center)
+     * @return string Estilos CSS para la posición
+     */
+    public function get_drag_handle_position_styles($position) {
+        switch ($position) {
+            case 'top-left':
+                return 'top: 10px !important; left: 10px !important; right: auto !important; bottom: auto !important; transform: none !important;';
+            case 'top-right':
+                return 'top: 10px !important; right: 10px !important; left: auto !important; bottom: auto !important; transform: none !important;';
+            case 'bottom-left':
+                return 'bottom: 10px !important; left: 10px !important; top: auto !important; right: auto !important; transform: none !important;';
+            case 'bottom-right':
+                return 'bottom: 10px !important; right: 10px !important; top: auto !important; left: auto !important; transform: none !important;';
+            case 'center':
+                return 'top: 50% !important; left: 50% !important; right: auto !important; bottom: auto !important; transform: translate(-50%, -50%) !important;';
+            default:
+                return 'top: 10px !important; left: 10px !important; right: auto !important; bottom: auto !important; transform: none !important;';
+        }
     }
 }

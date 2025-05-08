@@ -62,6 +62,14 @@
                         handle: '.drag-handle',
                         placeholder: 'gallery-image-placeholder',
                         tolerance: 'pointer',
+                        // Mejorar feedback visual durante el arrastre
+                        start: function(event, ui) {
+                            ui.item.addClass('being-dragged');
+                            ui.placeholder.css('visibility', 'visible');
+                        },
+                        stop: function(event, ui) {
+                            ui.item.removeClass('being-dragged');
+                        },
                         update: function() {
                             // Actualizar el orden de las imágenes en el campo oculto
                             var updatedOrder = [];
@@ -602,6 +610,14 @@
                             handle: '.drag-handle',
                             placeholder: 'gallery-image-placeholder',
                             tolerance: 'pointer',
+                            // Mejorar feedback visual durante el arrastre
+                            start: function(event, ui) {
+                                ui.item.addClass('being-dragged');
+                                ui.placeholder.css('visibility', 'visible');
+                            },
+                            stop: function(event, ui) {
+                                ui.item.removeClass('being-dragged');
+                            },
                             update: function() {
                                 // Actualizar el orden de las imágenes en el campo oculto
                                 var updatedOrder = [];
@@ -622,6 +638,14 @@
                             placeholder: 'gallery-image-placeholder',
                             tolerance: 'pointer',
                             handle: '.drag-handle',
+                            // Mejorar feedback visual durante el arrastre
+                            start: function(event, ui) {
+                                ui.item.addClass('being-dragged');
+                                ui.placeholder.css('visibility', 'visible');
+                            },
+                            stop: function(event, ui) {
+                                ui.item.removeClass('being-dragged');
+                            },
                             update: function() {
                                 // Actualizar el orden de las imágenes en el campo oculto
                                 var updatedOrder = [];

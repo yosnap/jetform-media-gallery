@@ -2,7 +2,7 @@
 
 Plugin para WordPress que agrega un campo de galería de medios para JetFormBuilder, permitiendo seleccionar imagen destacada y galería para el CPT "singlecar".
 
-## Versión 1.1.1
+## Versión 1.1.2
 
 ## Características
 
@@ -34,13 +34,22 @@ Añade un campo HTML personalizado y dentro agrega el siguiente shortcode:
 - `field`: (requerido) Nombre del campo configurado en el panel de administración
 - `required`: (opcional) Si es requerido, usar '1' para requerido, '0' para opcional
 
+## Novedades en la versión 1.1.2
+
+- **Icono de ordenamiento personalizable**: Panel de administración para personalizar el color, tamaño, posición y opacidad del icono de ordenamiento.
+- **Mejora en la experiencia de arrastre**: El cursor de arrastrar solo aparece al pasar sobre el icono de ordenamiento, evitando confusiones.
+- **Optimización para dispositivos táctiles**: En móviles, el arrastre solo se activa al tocar el icono de ordenamiento.
+- **Feedback visual mejorado**: Efectos visuales durante el arrastre y ordenamiento para una mejor experiencia de usuario.
+- **Centrado vertical de líneas**: Mejora visual del icono de ordenamiento con líneas perfectamente centradas.
+- **Vista previa en tiempo real**: Panel de administración con vista previa en tiempo real de los cambios en el icono de ordenamiento.
+
 ## Novedades en la versión 1.1.1
 
 - **Selección acumulativa de imágenes**: Las imágenes seleccionadas ahora se acumulan en lugar de reemplazarse.
 - **Ordenamiento de imágenes existentes**: Las imágenes existentes en la galería tienen la funcionalidad de ordenamiento desde el inicio.
 - **Interfaz mejorada para iOS**: Rediseño completo de la interfaz de selección múltiple con indicadores visuales claros.
 - **Instrucciones paso a paso**: Guía visual con pasos numerados para facilitar la selección de imágenes.
-- **Indicadores visuales en cada imagen**: Etiquetas que muestran claramente qué imágenes están seleccionadas.
+- **Indicadores visuales en cada imagen**: Etiquetas que muestran claramente el estado de selección de cada imagen.ente qué imágenes están seleccionadas.
 - **Compatibilidad táctil mejorada**: Soporte optimizado para arrastrar y ordenar imágenes en dispositivos táctiles.
 
 ## Historial de cambios
@@ -68,6 +77,15 @@ Añade un campo HTML personalizado y dentro agrega el siguiente shortcode:
 - Implementado soporte táctil para arrastrar y ordenar imágenes en dispositivos móviles
 - Añadida biblioteca jQuery UI Touch Punch para mejorar interacciones táctiles
 - Optimizada interfaz de usuario para selección de imágenes en iOS
+
+### 1.1.2
+- Implementado panel de administración para personalizar el icono de ordenamiento (color, tamaño, posición, opacidad)
+- Mejorada la experiencia de arrastre para que el cursor solo cambie al pasar sobre el icono
+- Optimizada la interacción táctil en dispositivos móviles
+- Añadido feedback visual durante el arrastre y ordenamiento
+- Centradas verticalmente las líneas del icono de ordenamiento
+- Implementada vista previa en tiempo real en el panel de administración
+- Corregidos errores de sintaxis en el código PHP
 
 ### 1.0.7
 - Añadida funcionalidad de ordenamiento de imágenes en campos de galería mediante arrastrar y soltar

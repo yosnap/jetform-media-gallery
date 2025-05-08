@@ -58,6 +58,15 @@ class JetForm_Media_Gallery_Admin {
             'general_settings'
         );
         
+        // Campos para el icono de ordenamiento
+        add_settings_field(
+            'drag_handle_style',
+            __('Icono de ordenamiento', 'jetform-media-gallery'),
+            [$this, 'render_drag_handle_style_field'],
+            'jetform-media-gallery-general',
+            'general_settings'
+        );
+        
         add_settings_field(
             'remove_button_position',
             __('Posición del botón eliminar', 'jetform-media-gallery'),
@@ -319,6 +328,225 @@ class JetForm_Media_Gallery_Admin {
                     $('#custom-button-options').slideDown();
                 }
             });
+        });
+        </script>
+        <?php
+    }
+    
+    /**
+     * Renderiza los campos para personalizar el icono de ordenamiento
+     */
+    public function render_drag_handle_style_field() {
+        $options = get_option($this->option_name);
+        
+        // Valores por defecto
+        $drag_handle_color = isset($options['drag_handle_color']) ? $options['drag_handle_color'] : '#323232';
+        $drag_handle_size = isset($options['drag_handle_size']) ? $options['drag_handle_size'] : 24;
+        $drag_handle_opacity = isset($options['drag_handle_opacity']) ? $options['drag_handle_opacity'] : 0.85;
+        $drag_handle_position = isset($options['drag_handle_position']) ? $options['drag_handle_position'] : 'top-left';
+        $drag_handle_lines_color = isset($options['drag_handle_lines_color']) ? $options['drag_handle_lines_color'] : '#ffffff';
+        
+        ?>
+        <div class="drag-handle-style-options" style="padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">
+            <h4 style="margin-top: 0;">Personalizar icono de ordenamiento</h4>
+            
+            <p>
+                <label>
+                    Color de fondo:
+                    <input type="color" 
+                           name="<?php echo $this->option_name; ?>[drag_handle_color]" 
+                           value="<?php echo esc_attr($drag_handle_color); ?>"
+                           id="drag-handle-color">
+                </label>
+            </p>
+            
+            <p>
+                <label>
+                    Tamaño (px):
+                    <input type="number" 
+                           name="<?php echo $this->option_name; ?>[drag_handle_size]" 
+                           value="<?php echo esc_attr($drag_handle_size); ?>"
+                           min="16" 
+                           max="50"
+                           id="drag-handle-size">
+                </label>
+            </p>
+            
+            <p>
+                <label>
+                    Opacidad:
+                    <input type="range" 
+                           name="<?php echo $this->option_name; ?>[drag_handle_opacity]" 
+                           value="<?php echo esc_attr($drag_handle_opacity); ?>"
+                           min="0.1" 
+                           max="1" 
+                           step="0.05"
+                           id="drag-handle-opacity"
+                           style="width: 200px; vertical-align: middle;">
+                    <span class="opacity-value" style="margin-left: 10px;"><?php echo $drag_handle_opacity; ?></span>
+                </label>
+            </p>
+            
+            <p>
+                <label>
+                    Posición:
+                    <select name="<?php echo $this->option_name; ?>[drag_handle_position]" id="drag-handle-position">
+                        <option value="top-left" <?php selected($drag_handle_position, 'top-left'); ?>>Superior izquierda</option>
+                        <option value="top-right" <?php selected($drag_handle_position, 'top-right'); ?>>Superior derecha</option>
+                        <option value="bottom-left" <?php selected($drag_handle_position, 'bottom-left'); ?>>Inferior izquierda</option>
+                        <option value="bottom-right" <?php selected($drag_handle_position, 'bottom-right'); ?>>Inferior derecha</option>
+                        <option value="center" <?php selected($drag_handle_position, 'center'); ?>>Centro</option>
+                    </select>
+                </label>
+            </p>
+            
+            <p>
+                <label>
+                    Color de líneas:
+                    <input type="color" 
+                           name="<?php echo $this->option_name; ?>[drag_handle_lines_color]" 
+                           value="<?php echo esc_attr($drag_handle_lines_color); ?>"
+                           id="drag-handle-lines-color">
+                </label>
+            </p>
+            
+            <div class="drag-handle-preview" style="margin-top: 20px;">
+                <h4>Vista previa:</h4>
+                <div class="preview-container" style="position: relative; width: 150px; height: 150px; background-color: #f0f0f0; border: 1px solid #ddd; overflow: hidden;">
+                    <div id="drag-handle-preview" style="
+                        position: absolute;
+                        width: <?php echo esc_attr($drag_handle_size); ?>px;
+                        height: <?php echo esc_attr($drag_handle_size); ?>px;
+                        background-color: <?php echo esc_attr($drag_handle_color); ?>;
+                        opacity: <?php echo esc_attr($drag_handle_opacity); ?>;
+                        border-radius: 4px;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 3px;
+                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                        <?php 
+                        switch ($drag_handle_position) {
+                            case 'top-left':
+                                echo 'top: 10px; left: 10px;';
+                                break;
+                            case 'top-right':
+                                echo 'top: 10px; right: 10px;';
+                                break;
+                            case 'bottom-left':
+                                echo 'bottom: 10px; left: 10px;';
+                                break;
+                            case 'bottom-right':
+                                echo 'bottom: 10px; right: 10px;';
+                                break;
+                            case 'center':
+                                echo 'top: 50%; left: 50%; transform: translate(-50%, -50%);';
+                                break;
+                        }
+                        ?>
+                    ">
+                        <span style="
+                            display: block;
+                            width: 60%;
+                            height: 2px;
+                            background-color: <?php echo esc_attr($drag_handle_lines_color); ?>;
+                            border-radius: 1px;
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            box-shadow: 0 -4px 0 <?php echo esc_attr($drag_handle_lines_color); ?>, 0 4px 0 <?php echo esc_attr($drag_handle_lines_color); ?>;
+                        "></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            // Actualizar vista previa al cambiar valores
+            $('#drag-handle-color, #drag-handle-size, #drag-handle-opacity, #drag-handle-position, #drag-handle-lines-color').on('change input', function() {
+                updatePreview();
+            });
+            
+            // Mostrar valor de opacidad
+            $('#drag-handle-opacity').on('input', function() {
+                $('.opacity-value').text($(this).val());
+            });
+            
+            function updatePreview() {
+                var size = $('#drag-handle-size').val();
+                var color = $('#drag-handle-color').val();
+                var opacity = $('#drag-handle-opacity').val();
+                var position = $('#drag-handle-position').val();
+                var linesColor = $('#drag-handle-lines-color').val();
+                
+                var $preview = $('#drag-handle-preview');
+                
+                // Actualizar estilos
+                $preview.css({
+                    'width': size + 'px',
+                    'height': size + 'px',
+                    'background-color': color,
+                    'opacity': opacity
+                });
+                
+                // Actualizar posición
+                switch (position) {
+                    case 'top-left':
+                        $preview.css({
+                            'top': '10px',
+                            'left': '10px',
+                            'right': 'auto',
+                            'bottom': 'auto',
+                            'transform': 'none'
+                        });
+                        break;
+                    case 'top-right':
+                        $preview.css({
+                            'top': '10px',
+                            'right': '10px',
+                            'left': 'auto',
+                            'bottom': 'auto',
+                            'transform': 'none'
+                        });
+                        break;
+                    case 'bottom-left':
+                        $preview.css({
+                            'bottom': '10px',
+                            'left': '10px',
+                            'top': 'auto',
+                            'right': 'auto',
+                            'transform': 'none'
+                        });
+                        break;
+                    case 'bottom-right':
+                        $preview.css({
+                            'bottom': '10px',
+                            'right': '10px',
+                            'top': 'auto',
+                            'left': 'auto',
+                            'transform': 'none'
+                        });
+                        break;
+                    case 'center':
+                        $preview.css({
+                            'top': '50%',
+                            'left': '50%',
+                            'right': 'auto',
+                            'bottom': 'auto',
+                            'transform': 'translate(-50%, -50%)'
+                        });
+                        break;
+                }
+                
+                // Actualizar color de líneas
+                $preview.find('span').css({
+                    'background-color': linesColor,
+                    'box-shadow': '0 -4px 0 ' + linesColor + ', 0 4px 0 ' + linesColor
+                });
+            }
         });
         </script>
         <?php
@@ -820,6 +1048,32 @@ class JetForm_Media_Gallery_Admin {
             $sanitized['select_button_order'] = in_array($input['select_button_order'], ['before', 'after']) 
                 ? $input['select_button_order'] 
                 : 'before';
+        }
+        
+        // Sanitizar campos del icono de ordenamiento
+        if (isset($input['drag_handle_color'])) {
+            $sanitized['drag_handle_color'] = sanitize_hex_color($input['drag_handle_color']);
+        }
+        
+        if (isset($input['drag_handle_size'])) {
+            $sanitized['drag_handle_size'] = absint($input['drag_handle_size']);
+            $sanitized['drag_handle_size'] = min(max($sanitized['drag_handle_size'], 16), 50);
+        }
+        
+        if (isset($input['drag_handle_opacity'])) {
+            $sanitized['drag_handle_opacity'] = floatval($input['drag_handle_opacity']);
+            $sanitized['drag_handle_opacity'] = min(max($sanitized['drag_handle_opacity'], 0.1), 1);
+        }
+        
+        if (isset($input['drag_handle_position'])) {
+            $valid_positions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'];
+            $sanitized['drag_handle_position'] = in_array($input['drag_handle_position'], $valid_positions) 
+                ? $input['drag_handle_position'] 
+                : 'top-left';
+        }
+        
+        if (isset($input['drag_handle_lines_color'])) {
+            $sanitized['drag_handle_lines_color'] = sanitize_hex_color($input['drag_handle_lines_color']);
         }
 
         if (isset($input['title_tag'])) {
