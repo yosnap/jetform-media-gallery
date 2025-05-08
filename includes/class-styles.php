@@ -344,22 +344,38 @@ class JetForm_Media_Gallery_Styles {
                 transform: scale(0.95) !important;
             }
             
-            .ios-multiple-select-mode .attachment.selected:after {
-                content: "✓";
+            /* Indicador de selección para iOS */
+            .ios-select-indicator {
                 position: absolute;
-                top: 5px;
-                right: 5px;
-                width: 28px;
-                height: 28px;
-                background: #4CAF50;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background-color: rgba(0, 0, 0, 0.7);
                 color: white;
-                border-radius: 50%;
                 text-align: center;
-                line-height: 28px;
-                font-size: 16px;
-                font-weight: bold;
+                padding: 8px 5px;
+                font-size: 12px;
                 z-index: 100;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.3) !important;
+                transition: all 0.3s ease;
+                font-weight: bold;
+            }
+            
+            .ios-select-indicator.is-selected {
+                background-color: #4CAF50;
+                color: white;
+            }
+            
+            /* Hacer que las imágenes sean más grandes y fáciles de tocar */
+            .ios-multiple-select-mode .attachment {
+                min-width: 120px !important;
+                min-height: 120px !important;
+                margin: 10px !important;
+            }
+            
+            /* Mejorar la visualización de las imágenes seleccionadas */
+            .ios-multiple-select-mode .attachment.selected {
+                border: 3px solid #4CAF50 !important;
+                box-shadow: 0 0 10px rgba(76, 175, 80, 0.8) !important;
             }
             
             .ios-multiple-select-mode .attachment {
