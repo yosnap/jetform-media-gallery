@@ -301,7 +301,7 @@
                     setTimeout(function() {
                         // Mensaje de ayuda específico para iOS
                         var helpText = isIOS ? 
-                            'INSTRUCCIONES: 1) Toca el botón azul "Seleccionar múltiples imágenes". 2) Toca directamente sobre cada imagen que quieras seleccionar (aparecerá un texto verde "Seleccionada ✓"). 3) Cuando termines, toca el botón verde "Confirmar selección".' : 
+                            'INSTRUCCIONES: 1) Toca el botón azul "Seleccionar múltiples imágenes". 2) Toca 2 veces sobre cada imagen que quieras seleccionar (aparecerá un texto verde "Seleccionada ✓"). 3) Cuando termines, toca el botón verde "Confirmar selección".' : 
                             'Para seleccionar múltiples imágenes, mantén presionada cada imagen que desees incluir.';
                         
                         var helpMessage = $('<div class="mobile-upload-help" style="padding: 10px; background: #f7f7f7; margin: 10px; border-radius: 4px; text-align: center;">' + helpText + '</div>');
@@ -309,11 +309,11 @@
                         
                         // Para iOS, añadir botón de selección múltiple
                         if (isIOS) {
-                            var selectButton = $('<button type="button" class="ios-select-button button" style="margin: 10px; display: block; width: calc(100% - 20px); font-size: 18px !important; padding: 15px !important;">PASO 1: Seleccionar múltiples imágenes</button>');
+                            var selectButton = $('<button type="button" class="ios-select-button button" style="margin: 10px; display: block; width: calc(100% - 20px); font-size: 18px !important; padding: 15px !important;">1: Seleccionar múltiples imágenes</button>');
                             $('.mobile-upload-help').after(selectButton);
                             
                             // Añadir botón para confirmar selección múltiple
-                            var confirmButton = $('<button type="button" class="ios-confirm-button button" style="margin: 10px; display: none; width: calc(100% - 20px); background-color: #4CAF50 !important; font-size: 18px !important; padding: 15px !important;">PASO 3: Confirmar selección (0)</button>');
+                            var confirmButton = $('<button type="button" class="ios-confirm-button button" style="margin: 10px; display: none; width: calc(100% - 20px); background-color: #4CAF50 !important; font-size: 18px !important; padding: 15px !important;">3: Confirmar selección (0)</button>');
                             selectButton.after(confirmButton);
                             
                             // Variable para almacenar las imágenes seleccionadas
@@ -322,7 +322,7 @@
                             selectButton.on('click', function() {
                                 // Activar modo de selección múltiple
                                 $('.attachments-browser').addClass('ios-multiple-select-mode');
-                                $(this).text('PASO 2: Toca las imágenes para seleccionarlas').addClass('selecting');
+                                $(this).text('2: Toca 2 veces sobre las imágenes').addClass('selecting');
                                 confirmButton.show();
                                 
                                 // Desactivar el botón "Añadir a la galería" durante la selección múltiple
@@ -340,7 +340,7 @@
                                     // Solo añadir el botón si no existe ya
                                     if ($attachment.find('.ios-select-indicator').length === 0) {
                                         // Crear un botón de selección visible en cada imagen
-                                        var $selectButton = $('<div class="ios-select-indicator">Tocar para seleccionar</div>');
+                                        var $selectButton = $('<div class="ios-select-indicator">Tocar 2 veces para seleccionar</div>');
                                         $attachment.append($selectButton);
                                     }
                                 });
@@ -365,7 +365,7 @@
                                             selectedImages.push(attachmentId);
                                         }
                                     } else {
-                                        $indicator.text('Tocar para seleccionar').removeClass('is-selected');
+                                        $indicator.text('Tocar 2 veces para seleccionar').removeClass('is-selected');
                                         // Si no está seleccionado, quitarlo de la lista
                                         var index = selectedImages.indexOf(attachmentId);
                                         if (index !== -1) {
