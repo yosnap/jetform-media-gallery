@@ -21,324 +21,427 @@
     var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     
     $(document).ready(function() {
-        // Inicializar campos con valores existentes si estamos en modo edición
-        $('.media-gallery-field').each(function() {
-            // Comprobar si hay un valor inicial en los campos hidden
-            var inputField = $(this).find('input[type="hidden"]');
-            var fieldName = '';
-            
-            // Procesar campos de imagen destacada
-            if ($(this).find('.featured-image-container').length > 0) {
-                fieldName = $(this).find('.upload-featured-image').data('field');
-                var previewContainer = $('#featured-image-preview-' + fieldName);
-                var removeButton = previewContainer.find('.remove-featured-image');
-                
-                // Si el campo tiene valor, mostrar la imagen y el botón de eliminar
-                if (inputField.val()) {
-                    previewContainer.addClass('has-image');
-                    removeButton.show();
-                }
-            }
-            
-            // Inicializar sortable para galerías existentes
-            if ($(this).find('.gallery-container').length > 0) {
-                fieldName = $(this).find('.upload-gallery-images').data('field');
-                var galleryPreview = $('#gallery-images-preview-' + fieldName);
-                
-                // Asegurarse de que todas las imágenes existentes tengan el manejador de arrastre
-                galleryPreview.find('.gallery-image').each(function() {
-                    if ($(this).find('.drag-handle').length === 0) {
-                        $(this).append('<div class="drag-handle" title="Arrastrar para ordenar"></div>');
-                    }
-                });
-                
-                // Inicializar sortable para permitir reordenar las imágenes existentes
-                if (typeof $.fn.sortable !== 'undefined' && galleryPreview.find('.gallery-image').length > 0) {
-                    // Inicializar sortable
-                    galleryPreview.sortable({
-                        items: '.gallery-image',
-                        cursor: 'move',
-                        opacity: 0.7,
-                        handle: '.drag-handle',
-                        placeholder: 'gallery-image-placeholder',
-                        tolerance: 'pointer',
-                        // Mejorar feedback visual durante el arrastre
-                        start: function(event, ui) {
-                            ui.item.addClass('being-dragged');
-                            ui.placeholder.css('visibility', 'visible');
-                        },
-                        stop: function(event, ui) {
-                            ui.item.removeClass('being-dragged');
-                        },
-                        update: function() {
-                            // Actualizar el orden de las imágenes en el campo oculto
-                            var updatedOrder = [];
-                            galleryPreview.find('.gallery-image').each(function() {
-                                updatedOrder.push($(this).data('id'));
-                            });
-                            $('#gallery-images-input-' + fieldName).val(updatedOrder.join(','));
-                        }
-                    });
-                }
-            }
-            
-            // Inicializar sortable para galerías existentes
-            if ($(this).find('.gallery-container').length > 0) {
-                var galleryContainer = $(this).find('.gallery-container');
-                var galleryPreview = galleryContainer.find('.images-preview');
-                
-                // Inicializar sortable para permitir reordenar las imágenes existentes
-                if (typeof $.fn.sortable !== 'undefined' && galleryPreview.find('.gallery-image').length > 0) {
-                    var sortableOptions = {
-                        items: '.gallery-image',
-                        cursor: 'move',
-                        opacity: 0.7,
-                        placeholder: 'gallery-image-placeholder',
-                        tolerance: 'pointer',
-                        update: function() {
-                            // Actualizar el orden de las imágenes en el campo oculto
-                            var newOrder = [];
-                            galleryPreview.find('.gallery-image').each(function() {
-                                newOrder.push($(this).data('id'));
-                            });
-                            var fieldName = galleryContainer.find('.upload-gallery-images').data('field');
-                            $('#gallery-images-input-' + fieldName).val(newOrder.join(','));
-                        }
-                    };
-                    
-                    // Configuraciones específicas para móviles
-                    if (isMobile) {
-                        // Mejora para dispositivos táctiles
-                        sortableOptions.delay = 150;
-                        sortableOptions.distance = 10;
-                        sortableOptions.scroll = false;
-                        
-                        // Configuraciones específicas para iOS
-                        if (isIOS) {
-                            sortableOptions.handle = '.drag-handle';
-                            sortableOptions.helper = 'clone';
-                            sortableOptions.appendTo = 'body';
-                            sortableOptions.zIndex = 9999;
-                            sortableOptions.tolerance = 'intersect';
-                        }
-                    }
-                    
-                    galleryPreview.sortable(sortableOptions);
-                    galleryPreview.addClass('sortable-enabled');
-                    
-                    // Asegurarse de que todas las imágenes existentes tengan el manejador de arrastre
-                    galleryPreview.find('.gallery-image').each(function() {
-                        if ($(this).find('.drag-handle').length === 0) {
-                            $(this).append('<span class="drag-handle"></span>');
-                        }
-                    });
-                }
-            }
-            
-            // Procesar campos de galería
-            if ($(this).find('.gallery-container').length > 0) {
-                fieldName = $(this).find('.upload-gallery-images').data('field');
-                var galleryPreview = $('#gallery-images-preview-' + fieldName);
-                
-                // Asegurarse de que los eventos click estén asignados a los botones de eliminar
-                galleryPreview.find('.remove-image').on('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    var imageContainer = $(this).parent();
-                    var imageId = imageContainer.data('id');
-                    var galleryIds = $('#gallery-images-input-' + fieldName).val().split(',');
-                    
-                    galleryIds = galleryIds.filter(function(id) {
-                        return id != imageId;
-                    });
-                    
-                    $('#gallery-images-input-' + fieldName).val(galleryIds.join(','));
-                    imageContainer.fadeOut(300, function() {
-                        $(this).remove();
-                    });
-                });
-                
-                // Inicializar sortable para permitir reordenar las imágenes
-                if (typeof $.fn.sortable !== 'undefined') {
-                    var sortableOptions = {
-                        items: '.gallery-image',
-                        cursor: 'move',
-                        opacity: 0.7,
-                        placeholder: 'gallery-image-placeholder',
-                        tolerance: 'pointer',
-                        update: function() {
-                            // Actualizar el orden de las imágenes en el campo oculto
-                            var newOrder = [];
-                            galleryPreview.find('.gallery-image').each(function() {
-                                newOrder.push($(this).data('id'));
-                            });
-                            $('#gallery-images-input-' + fieldName).val(newOrder.join(','));
-                        }
-                    };
-                    
-                    // Configuraciones específicas para móviles
-                    if (isMobile) {
-                        // Mejora para dispositivos táctiles
-                        sortableOptions.delay = 150;
-                        sortableOptions.distance = 10;
-                        sortableOptions.scroll = false;
-                        
-                        // Configuraciones específicas para iOS
-                        if (isIOS) {
-                            sortableOptions.handle = '.drag-handle';
-                            sortableOptions.helper = 'clone';
-                            sortableOptions.appendTo = 'body';
-                            sortableOptions.zIndex = 9999;
-                            sortableOptions.tolerance = 'intersect';
-                        }
-                    }
-                    
-                    galleryPreview.sortable(sortableOptions);
-                    
-                    // Para iOS, necesitamos inicializar el touch-punch
-                    if (isIOS && typeof $.fn.draggable !== 'undefined') {
-                        // Inicializar jQuery UI Touch Punch
-                        (function($) {
-                            if ($.support && $.support.touch !== undefined) return;
-                            
-                            $.support = $.support || {};
-                            $.support.touch = 'ontouchend' in document;
-                            
-                            if (!$.support.touch) return;
-                            
-                            var mouseProto = $.ui.mouse.prototype,
-                                _mouseInit = mouseProto._mouseInit,
-                                _mouseDestroy = mouseProto._mouseDestroy,
-                                touchHandled;
-                            
-                            mouseProto._mouseInit = function() {
-                                var self = this;
-                                self.element.bind({
-                                    'touchstart.jQueryUiTouchPunch': function(event) { return self._touchStart(event); },
-                                    'touchmove.jQueryUiTouchPunch': function(event) { return self._touchMove(event); },
-                                    'touchend.jQueryUiTouchPunch': function(event) { return self._touchEnd(event); }
-                                });
-                                _mouseInit.call(self);
-                            };
-                            
-                            mouseProto._mouseDestroy = function() {
-                                var self = this;
-                                self.element.unbind({
-                                    'touchstart.jQueryUiTouchPunch': self._touchStart,
-                                    'touchmove.jQueryUiTouchPunch': self._touchMove,
-                                    'touchend.jQueryUiTouchPunch': self._touchEnd
-                                });
-                                _mouseDestroy.call(self);
-                            };
-                            
-                            mouseProto._touchStart = function(event) {
-                                var self = this;
-                                if (touchHandled || !self._mouseCapture(event.originalEvent.changedTouches[0])) return;
-                                
-                                touchHandled = true;
-                                self._touchMoved = false;
-                                
-                                event.preventDefault();
-                                
-                                var touch = event.originalEvent.changedTouches[0];
-                                var simulatedEvent = document.createEvent('MouseEvents');
-                                simulatedEvent.initMouseEvent('mousedown', true, true, window, 1,
-                                    touch.screenX, touch.screenY, touch.clientX, touch.clientY,
-                                    false, false, false, false, 0, null);
-                                self.element[0].dispatchEvent(simulatedEvent);
-                            };
-                            
-                            mouseProto._touchMove = function(event) {
-                                if (!touchHandled) return;
-                                
-                                this._touchMoved = true;
-                                
-                                var touch = event.originalEvent.changedTouches[0];
-                                var simulatedEvent = document.createEvent('MouseEvents');
-                                simulatedEvent.initMouseEvent('mousemove', true, true, window, 1,
-                                    touch.screenX, touch.screenY, touch.clientX, touch.clientY,
-                                    false, false, false, false, 0, null);
-                                this.element[0].dispatchEvent(simulatedEvent);
-                                
-                                event.preventDefault();
-                            };
-                            
-                            mouseProto._touchEnd = function(event) {
-                                if (!touchHandled) return;
-                                
-                                var touch = event.originalEvent.changedTouches[0];
-                                var simulatedEvent = document.createEvent('MouseEvents');
-                                simulatedEvent.initMouseEvent(this._touchMoved ? 'mouseup' : 'click', true, true, window, 1,
-                                    touch.screenX, touch.screenY, touch.clientX, touch.clientY,
-                                    false, false, false, false, 0, null);
-                                this.element[0].dispatchEvent(simulatedEvent);
-                                
-                                touchHandled = false;
-                                this._touchMoved = false;
-                            };
-                        })(jQuery);
-                    }
-                }
-            }
-        });
+        console.log('JetForm Media Gallery inicializado');
         
-        // Media Uploader para la imagen destacada
+        // Añadir estilos CSS para mejorar la apariencia y usabilidad
+        $('head').append(`
+            <style>
+                /* Estilos para el manejador de arrastre */
+                .gallery-image {
+                    position: relative;
+                    margin: 5px;
+                    border-radius: 4px;
+                    overflow: hidden;
+                }
+                .drag-handle {
+                    position: absolute;
+                    top: 5px;
+                    right: 30px;
+                    background: rgba(0,0,0,0.6);
+                    color: white;
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    cursor: move;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10;
+                }
+                .drag-handle:before {
+                    content: "\\f545";
+                    font-family: dashicons;
+                    font-size: 16px;
+                }
+                .drag-handle:hover {
+                    background: rgba(0,0,0,0.8);
+                }
+                
+                /* Estilos para la imagen destacada */
+                .featured-image-preview {
+                    position: relative;
+                    margin-top: 10px;
+                    border-radius: 4px;
+                    overflow: hidden;
+                    max-width: 300px;
+                }
+                .featured-image-preview img {
+                    max-width: 100%;
+                    height: auto;
+                    display: block;
+                }
+                .remove-featured-image {
+                    position: absolute;
+                    top: 5px;
+                    right: 5px;
+                    background: rgba(0,0,0,0.6);
+                    color: white;
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    text-align: center;
+                    line-height: 22px;
+                    font-size: 18px;
+                    cursor: pointer;
+                    z-index: 10;
+                }
+                .remove-featured-image:hover {
+                    background: rgba(0,0,0,0.8);
+                }
+                
+                /* Estilos para la galería de imágenes */
+                .images-preview {
+                    display: flex;
+                    flex-wrap: wrap;
+                    margin-top: 10px;
+                    gap: 10px;
+                }
+                .gallery-image {
+                    width: calc(33.333% - 10px);
+                    max-width: 150px;
+                    position: relative;
+                }
+                .gallery-image img {
+                    width: 100%;
+                    height: auto;
+                    display: block;
+                    border-radius: 4px;
+                }
+                .remove-image {
+                    position: absolute;
+                    top: 5px;
+                    right: 5px;
+                    background: rgba(0,0,0,0.6);
+                    color: white;
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    text-align: center;
+                    line-height: 22px;
+                    font-size: 18px;
+                    cursor: pointer;
+                    z-index: 20;
+                    text-decoration: none;
+                }
+                .remove-image:hover {
+                    background: rgba(0,0,0,0.8);
+                }
+                
+                /* Estilos para los botones de carga */
+                .upload-gallery-images, .upload-featured-image {
+                    background: #2271b1;
+                    color: white;
+                    border: none;
+                    padding: 8px 12px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    display: inline-block;
+                    text-decoration: none;
+                }
+                .upload-gallery-images:hover, .upload-featured-image:hover {
+                    background: #135e96;
+                }
+                
+                /* Estilos para el campo de caption */
+                .image-caption {
+                    width: 100%;
+                    margin-top: 5px;
+                    padding: 5px;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    font-size: 12px;
+                }
+                
+                /* Estilos para el modo de arrastre */
+                .being-dragged {
+                    opacity: 0.7;
+                    z-index: 9999;
+                }
+                .ui-sortable-placeholder {
+                    visibility: visible !important;
+                    border: 2px dashed #ccc;
+                    background: rgba(0,0,0,0.05);
+                    border-radius: 4px;
+                }
+                
+                /* Mostrar checks en modo "Add to gallery" para permitir selección/deselección */
+                .media-modal .attachment .check {
+                    display: block !important;
+                    opacity: 1 !important;
+                    background: rgba(0, 0, 0, 0.5) !important;
+                    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5) !important;
+                    border: none !important;
+                    width: 24px !important;
+                    height: 24px !important;
+                    z-index: 100 !important;
+                }
+                
+                .media-modal .attachment.selected .check {
+                    display: block !important;
+                    opacity: 1 !important;
+                    background: #0073aa !important;
+                    box-shadow: 0 0 0 1px #fff !important;
+                    z-index: 100 !important;
+                }
+                
+                /* Estilo para el icono de verificación */
+                .media-modal .attachment .check:after {
+                    content: '✓' !important;
+                    color: #fff !important;
+                    font-size: 16px !important;
+                    position: absolute !important;
+                    top: 50% !important;
+                    left: 50% !important;
+                    transform: translate(-50%, -50%) !important;
+                    font-weight: bold !important;
+                }
+                
+                /* Estilos específicos para el checkbox */
+                .media-modal .attachment .check div,
+                .media-modal .attachment.selected .check div {
+                    display: none !important;
+                }
+                
+                /* Asegurar que el botón X para eliminar siga visible */
+                .gallery-image .remove-image {
+                    z-index: 200 !important;
+                }
+                
+                /* Ajustar posición del checkbox para evitar solapamientos */
+                .media-modal .attachment .check {
+                    top: 5px !important;
+                    right: 5px !important;
+                }
+                
+                /* Mejorar responsive del explorador de galerías */
+                .media-frame select.media-attachment-filters,
+                .media-frame .media-menu select {
+                    min-width: 200px !important;
+                    width: auto !important;
+                    max-width: 100% !important;
+                    font-size: 16px !important;
+                    height: 36px !important;
+                    padding: 0 24px 0 8px !important;
+                    background-color: #fff !important;
+                    border: 1px solid #ddd !important;
+                    border-radius: 4px !important;
+                    box-shadow: 0 1px 2px rgba(0,0,0,0.07) !important;
+                    color: #32373c !important;
+                    margin: 8px !important;
+                }
+                
+                /* Sobreescribir estilos del botón Menu basados en la imagen proporcionada */
+                .wp-core-ui .media-frame:not(.hide-menu) .button.media-frame-menu-toggle {
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    position: absolute !important;
+                    left: 50% !important;
+                    transform: translateX(-50%) !important;
+                    margin: -6px 0 0 !important;
+                    padding: 0 2px 0 12px !important;
+                    font-size: 0.875rem !important;
+                    font-weight: 600 !important;
+                    text-decoration: none !important;
+                    background: transparent !important;
+                    height: 0.1% !important;
+                    min-height: 40px !important;
+                }
+                
+                /* Estilos específicos para el select Menu */
+                .media-modal .media-menu select,
+                .media-modal select.media-menu {
+                    min-width: 200px !important;
+                    width: 200px !important;
+                    max-width: 100% !important;
+                    font-size: 16px !important;
+                    height: 40px !important;
+                    padding: 5px 24px 5px 10px !important;
+                    background-color: #fff !important;
+                    border: 1px solid #8c8f94 !important;
+                    border-radius: 4px !important;
+                    box-shadow: 0 0 0 transparent !important;
+                    color: #2c3338 !important;
+                    margin: 8px !important;
+                    -webkit-appearance: menulist !important;
+                    appearance: menulist !important;
+                }
+                
+                /* Ajustar tamaño de los botones en el explorador de galerías */
+                .media-toolbar-primary .button.media-button-gallery-edit,
+                .media-toolbar-primary .button.media-button-reverse,
+                .media-toolbar-primary .button.button-primary.media-button-insert {
+                    padding: 0 12px !important;
+                    height: 30px !important;
+                    line-height: 28px !important;
+                    font-size: 13px !important;
+                    min-height: 30px !important;
+                }
+                
+                /* Mejorar responsive en pantallas pequeñas */
+                @media (max-width: 782px) {
+                    .media-frame select.media-attachment-filters,
+                    .media-frame .media-menu select {
+                        width: 100% !important;
+                        height: 40px !important;
+                        font-size: 16px !important;
+                        padding: 0 24px 0 8px !important;
+                        margin: 10px 0 !important;
+                        background-size: 16px 16px !important;
+                        background-position: right 8px center !important;
+                    }
+                    
+                    /* Contenedor del select para asegurar que ocupe el ancho correcto */
+                    .media-frame .media-menu,
+                    .media-frame .media-toolbar-secondary {
+                        width: 100% !important;
+                        padding: 10px !important;
+                        box-sizing: border-box !important;
+                    }
+                    
+                    .media-toolbar-primary .button,
+                    .media-toolbar-secondary .button {
+                        padding: 0 10px !important;
+                        height: 36px !important;
+                        line-height: 34px !important;
+                        font-size: 13px !important;
+                        margin-left: 5px !important;
+                        margin-right: 5px !important;
+                    }
+                    
+                    /* Ajustar el layout de los botones en móvil */
+                    .media-frame-toolbar .media-toolbar {
+                        display: flex !important;
+                        flex-wrap: wrap !important;
+                        justify-content: space-between !important;
+                    }
+                    
+                    .media-frame-toolbar .media-toolbar-secondary {
+                        margin-bottom: 10px !important;
+                        flex: 1 0 100% !important;
+                    }
+                    
+                    .media-frame-toolbar .media-toolbar-primary {
+                        flex: 1 0 100% !important;
+                        display: flex !important;
+                        justify-content: flex-end !important;
+                    }
+                }
+            </style>
+        `);
+        
+        // Evento para abrir el explorador de medios para imagen destacada
         $(document).on('click', '.upload-featured-image', function(e) {
             e.preventDefault();
             
             var fieldName = $(this).data('field');
-            var controlsContainer = $(this).closest('.image-controls');
+            var controlsContainer = $(this).closest('.featured-image-controls');
             var previewSelector = '#featured-image-preview-' + fieldName;
+            var inputField = $('#featured-image-input-' + fieldName);
             
-            var featuredImageFrame = wp.media({
-                title: JetFormMediaGallery.i18n.selectFeaturedImage || 'Seleccionar imagen destacada',
+            console.log('Abriendo selector de imagen destacada para el campo:', fieldName);
+            
+            // Configurar el frame de medios
+            var featuredFrame = wp.media({
+                title: 'Seleccionar imagen destacada',
+                library: {
+                    type: 'image'
+                },
                 button: {
-                    text: JetFormMediaGallery.i18n.useThisImage || 'Usar esta imagen'
+                    text: 'Establecer imagen destacada'
                 },
                 multiple: false
             });
             
-            featuredImageFrame.on('select', function() {
-                var attachment = featuredImageFrame.state().get('selection').first().toJSON();
+            // Cuando se selecciona una imagen
+            featuredFrame.on('select', function() {
+                var attachment = featuredFrame.state().get('selection').first().toJSON();
+                console.log('Imagen destacada seleccionada:', attachment);
                 
-                // Si no existe el contenedor de vista previa, crearlo
+                // Actualizar el campo oculto con el ID de la imagen
+                inputField.val(attachment.id);
+                
+                // Actualizar la vista previa
                 if ($(previewSelector).length === 0) {
-                    controlsContainer.append(
-                        '<div id="featured-image-preview-' + fieldName + '" class="image-preview has-image" style="background-image: url(\'' + attachment.url + '\')">' +
-                        '<div class="image-overlay"></div>' +
-                        '<button type="button" class="remove-featured-image">×</button>' +
-                        '</div>'
-                    );
-                } else {
-                    // Si ya existe, actualizar su contenido
-                    var previewContainer = $(previewSelector);
-                    previewContainer.css('background-image', 'url(' + attachment.url + ')');
-                    previewContainer.addClass('has-image');
-                    previewContainer.show();
+                    controlsContainer.after('<div id="' + previewSelector.substring(1) + '" class="featured-image-preview"></div>');
                 }
                 
-                $('#featured-image-input-' + fieldName).val(attachment.id);
+                var imageUrl = attachment.sizes.thumbnail ? attachment.sizes.thumbnail.url : attachment.url;
+                $(previewSelector).html('<img src="' + imageUrl + '" alt="' + attachment.alt + '"><a href="#" class="remove-featured-image">×</a>');
+                $(previewSelector).show();
             });
             
-            featuredImageFrame.open();
+            featuredFrame.open();
         });
         
-        // Eliminar imagen destacada
+        // Evento para eliminar la imagen destacada
         $(document).on('click', '.remove-featured-image', function(e) {
             e.preventDefault();
-            e.stopPropagation();
             
-            var previewContainer = $(this).closest('.image-preview');
+            var previewContainer = $(this).closest('.featured-image-preview');
             var fieldName = previewContainer.attr('id').replace('featured-image-preview-', '');
+            var inputField = $('#featured-image-input-' + fieldName);
             
-            $('#featured-image-input-' + fieldName).val('');
+            // Limpiar el campo oculto
+            inputField.val('');
             
-            // Eliminar completamente el contenedor de vista previa
-            previewContainer.remove();
+            // Ocultar la vista previa
+            previewContainer.hide();
         });
         
-        // Media Uploader para la galería
+        // Función para inicializar sortable en la galería
+        function initSortable(previewSelector, fieldName) {
+            var galleryPreview = $(previewSelector);
+            
+            if (galleryPreview.length > 0 && !galleryPreview.hasClass('ui-sortable')) {
+                galleryPreview.sortable({
+                    items: '.gallery-image',
+                    handle: '.drag-handle',
+                    placeholder: 'ui-sortable-placeholder',
+                    start: function(event, ui) {
+                        ui.item.addClass('being-dragged');
+                        ui.placeholder.css('visibility', 'visible');
+                    },
+                    stop: function(event, ui) {
+                        ui.item.removeClass('being-dragged');
+                        
+                        // Actualizar el orden de las imágenes en el campo oculto
+                        var updatedOrder = [];
+                        galleryPreview.find('.gallery-image').each(function() {
+                            updatedOrder.push($(this).data('id'));
+                        });
+                        $('#gallery-images-input-' + fieldName).val(updatedOrder.join(','));
+                    }
+                });
+            }
+        }
+        
+        // Aplicar estilos al select Menu cuando aparezca en el DOM
+        $(document).on('DOMNodeInserted', function(e) {
+            if ($(e.target).is('select.media-menu') || $(e.target).find('select.media-menu').length > 0) {
+                console.log('Menu select detectado, aplicando estilos');
+                
+                // Aplicar estilos directamente
+                $('select.media-menu').css({
+                    'min-width': '200px',
+                    'width': '200px',
+                    'max-width': '100%',
+                    'font-size': '16px',
+                    'height': '40px',
+                    'padding': '5px 24px 5px 10px',
+                    'background-color': '#fff',
+                    'border': '1px solid #8c8f94',
+                    'border-radius': '4px',
+                    'box-shadow': '0 0 0 transparent',
+                    'color': '#2c3338',
+                    'margin': '8px',
+                    '-webkit-appearance': 'menulist',
+                    'appearance': 'menulist'
+                });
+            }
+        });
+        
+        // Evento para abrir el explorador de medios para galerías
         $(document).on('click', '.upload-gallery-images', function(e) {
             e.preventDefault();
             
@@ -348,331 +451,86 @@
             var inputField = $('#gallery-images-input-' + fieldName);
             var currentIds = inputField.val() ? inputField.val().split(',').filter(Boolean) : [];
             
-            // Configuración optimizada para móviles
-            var galleryFrameOptions = {
-                title: JetFormMediaGallery.i18n.selectGalleryImages || 'Seleccionar imágenes para galería',
-                button: {
-                    text: JetFormMediaGallery.i18n.addToGallery || 'Añadir a la galería'
-                },
-                multiple: true
-            };
+            console.log('Abriendo selector de galería para el campo:', fieldName);
+            console.log('IDs actuales:', currentIds);
             
-            // Optimizaciones específicas para móviles
-            if (isMobile) {
-                // En móviles, aseguramos que la biblioteca se abre en modo "Subir archivos" por defecto
-                galleryFrameOptions.library = { type: 'image' };
-                galleryFrameOptions.frame = 'select';
-                galleryFrameOptions.state = 'library';
-                
-                // Configuraciones específicas para iOS
-                if (isIOS) {
-                    // Forzar el modo de selección múltiple en iOS
-                    galleryFrameOptions.multiple = true;
-                    
-                    // Añadir un pequeño retraso para iOS
-                    setTimeout(function() {
-                        $('.media-frame-content .attachments-browser').addClass('ios-enhanced');
-                    }, 800);
-                }
-            }
-            
-            var galleryFrame = wp.media(galleryFrameOptions);
-            
-            // Preseleccionar imágenes existentes
-            galleryFrame.on('open', function() {
-                var selection = galleryFrame.state().get('selection');
-                
-                // Añadir las imágenes existentes a la selección
-                currentIds.forEach(function(id) {
-                    if (id) {
-                        var attachment = wp.media.attachment(id);
-                        attachment.fetch();
-                        selection.add(attachment ? [attachment] : []);
-                    }
-                });
-                
-                // En móviles, mostrar mensaje de ayuda y mejorar la interfaz
-                if (isMobile) {
-                    setTimeout(function() {
-                        // Mensaje de ayuda específico para iOS
-                        var helpText = isIOS ? 
-                            'INSTRUCCIONES: 1) Toca el botón azul "Seleccionar múltiples imágenes". 2) Toca 2 veces sobre cada imagen que quieras seleccionar (aparecerá un texto verde "Seleccionada ✓"). 3) Cuando termines, toca el botón verde "Confirmar selección".' : 
-                            'Para seleccionar múltiples imágenes, mantén presionada cada imagen que desees incluir.';
-                        
-                        var helpMessage = $('<div class="mobile-upload-help" style="padding: 10px; background: #f7f7f7; margin: 10px; border-radius: 4px; text-align: center;">' + helpText + '</div>');
-                        $('.media-frame-content').prepend(helpMessage);
-                        
-                        // Para iOS, añadir botón de selección múltiple
-                        if (isIOS) {
-                            var selectButton = $('<button type="button" class="ios-select-button button" style="margin: 10px; display: block; width: calc(100% - 20px); font-size: 18px !important; padding: 15px !important;">1: Seleccionar múltiples imágenes</button>');
-                            $('.mobile-upload-help').after(selectButton);
-                            
-                            // Añadir botón para confirmar selección múltiple
-                            var confirmButton = $('<button type="button" class="ios-confirm-button button" style="margin: 10px; display: none; width: calc(100% - 20px); background-color: #4CAF50 !important; font-size: 18px !important; padding: 15px !important;">3: Confirmar selección (0)</button>');
-                            selectButton.after(confirmButton);
-                            
-                            // Variable para almacenar las imágenes seleccionadas
-                            var selectedImages = [];
-                            
-                            selectButton.on('click', function() {
-                                // Activar modo de selección múltiple
-                                $('.attachments-browser').addClass('ios-multiple-select-mode');
-                                $(this).text('2: Toca 2 veces sobre las imágenes').addClass('selecting');
-                                confirmButton.show();
-                                
-                                // Desactivar el botón "Añadir a la galería" durante la selección múltiple
-                                $('.media-toolbar-primary .button').prop('disabled', true);
-                                
-                                // Limpiar selecciones previas
-                                selectedImages = [];
-                                confirmButton.text('Confirmar selección (0)');
-                                $('.attachments .attachment.selected').removeClass('selected');
-                                
-                                // Añadir indicadores visuales de selección a cada imagen
-                                $('.attachments .attachment').each(function() {
-                                    var $attachment = $(this);
-                                    
-                                    // Solo añadir el botón si no existe ya
-                                    if ($attachment.find('.ios-select-indicator').length === 0) {
-                                        // Crear un botón de selección visible en cada imagen
-                                        var $selectButton = $('<div class="ios-select-indicator">Tocar 2 veces para seleccionar</div>');
-                                        $attachment.append($selectButton);
-                                    }
-                                });
-                                
-                                // Hacer que los attachments sean seleccionables con un toque
-                                $('.attachments .attachment').off('click.ios-select').on('click.ios-select', function(e) {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    
-                                    var $this = $(this);
-                                    $this.toggleClass('selected');
-                                    
-                                    // Obtener el ID del adjunto
-                                    var attachmentId = $this.data('id');
-                                    
-                                    // Actualizar el texto del indicador
-                                    var $indicator = $this.find('.ios-select-indicator');
-                                    if ($this.hasClass('selected')) {
-                                        $indicator.text('Seleccionada ✓').addClass('is-selected');
-                                        // Verificar si ya existe en la lista
-                                        if (selectedImages.indexOf(attachmentId) === -1) {
-                                            selectedImages.push(attachmentId);
-                                        }
-                                    } else {
-                                        $indicator.text('Tocar 2 veces para seleccionar').removeClass('is-selected');
-                                        // Si no está seleccionado, quitarlo de la lista
-                                        var index = selectedImages.indexOf(attachmentId);
-                                        if (index !== -1) {
-                                            selectedImages.splice(index, 1);
-                                        }
-                                    }
-                                    
-                                    // Actualizar contador en el botón de confirmar
-                                    confirmButton.text('PASO 3: Confirmar selección (' + selectedImages.length + ')');
-                                });
-                            });
-                            
-                            // Manejar la confirmación de selección múltiple
-                            confirmButton.on('click', function() {
-                                if (selectedImages.length > 0) {
-                                    // Limpiar selección actual
-                                    selection.reset();
-                                    
-                                    // Añadir todas las imágenes seleccionadas
-                                    selectedImages.forEach(function(id) {
-                                        var attachment = wp.media.attachment(id);
-                                        attachment.fetch();
-                                        selection.add(attachment);
-                                    });
-                                    
-                                    // Volver al modo normal
-                                    $('.attachments-browser').removeClass('ios-multiple-select-mode');
-                                    selectButton.text('Seleccionar múltiples imágenes').removeClass('selecting');
-                                    confirmButton.hide();
-                                    
-                                    // Reactivar el botón "Añadir a la galería"
-                                    $('.media-toolbar-primary .button').prop('disabled', false);
-                                    
-                                    // Simular clic en el botón "Añadir a la galería"
-                                    setTimeout(function() {
-                                        $('.media-toolbar-primary .button').click();
-                                    }, 100);
-                                } else {
-                                    alert('Por favor, selecciona al menos una imagen');
-                                }
-                            });
-                            
-                            // Añadir botón para cancelar selección
-                            var cancelButton = $('<button type="button" class="ios-cancel-button button" style="margin: 10px; display: none; width: calc(100% - 20px); background-color: #f44336 !important;">Cancelar selección</button>');
-                            confirmButton.after(cancelButton);
-                            
-                            cancelButton.on('click', function() {
-                                // Volver al modo normal
-                                $('.attachments-browser').removeClass('ios-multiple-select-mode');
-                                selectButton.text('Seleccionar múltiples imágenes').removeClass('selecting');
-                                confirmButton.hide();
-                                cancelButton.hide();
-                                
-                                // Limpiar selecciones
-                                $('.attachments .attachment.selected').removeClass('selected');
-                                
-                                // Reactivar el botón "Añadir a la galería"
-                                $('.media-toolbar-primary .button').prop('disabled', false);
-                            });
-                            
-                            // Mostrar el botón de cancelar cuando se activa el modo de selección
-                            selectButton.on('click', function() {
-                                cancelButton.show();
-                            });
-                        }
-                        
-                        // Mejorar la visualización de la biblioteca de medios en móviles
-                        $('.media-frame-content').css({
-                            'overflow-y': 'auto',
-                            '-webkit-overflow-scrolling': 'touch'
-                        });
-                        
-                        // Hacer que los botones sean más grandes en móviles
-                        $('.media-toolbar-primary button, .media-toolbar-secondary button').css({
-                            'padding': '12px 15px',
-                            'font-size': '16px',
-                            'height': 'auto'
-                        });
-                    }, 800);
-                }
-            });
-            
-            galleryFrame.on('select', function() {
-                var attachments = galleryFrame.state().get('selection').toJSON();
-                
+            // Función común para procesar la selección de imágenes
+            function processSelection(attachments) {
                 if (attachments.length > 0) {
                     // Asegurarse de que el contenedor de galería exista y sea visible
                     if ($(previewSelector).length === 0) {
-                        controlsContainer.append('<div id="gallery-images-preview-' + fieldName + '" class="images-preview"></div>');
-                    } else {
-                        // No vaciar el contenedor para mantener las imágenes existentes
-                        $(previewSelector).show();
+                        controlsContainer.after('<div id="' + previewSelector.substring(1) + '" class="images-preview"></div>');
                     }
+                    $(previewSelector).show();
                     
-                    var galleryPreview = $(previewSelector);
-                    var existingIds = currentIds;
-                    var newIds = [];
-                    
-                    // Primero, obtener las imágenes existentes y su orden
-                    if (!galleryPreview.is(':empty')) {
-                        // Conservar las imágenes existentes y su orden
-                        existingIds = [];
-                        galleryPreview.find('.gallery-image').each(function() {
-                            existingIds.push($(this).data('id').toString());
-                        });
-                        
-                        // Inicializar newIds con las imágenes existentes para mantenerlas
-                        newIds = existingIds.slice();
-                    }
-                    
-                    // Añadir las nuevas imágenes seleccionadas
-                    attachments.forEach(function(attachment) {
-                        var attachmentId = attachment.id.toString();
-                        
-                        // Solo añadir el ID si no existe ya en la lista
-                        if (newIds.indexOf(attachmentId) === -1) {
-                            newIds.push(attachmentId);
-                        }
-                        
-                        // Verificar si la imagen ya existe en la galería
-                        if (existingIds.indexOf(attachmentId) === -1) {
-                            galleryPreview.append(
-                                '<div class="gallery-image" data-id="' + attachment.id + '" style="background-image: url(\'' + attachment.url + '\')">' +
-                                '<div class="image-overlay"></div>' +
-                                '<div class="drag-handle" title="Arrastrar para ordenar"></div>' +
-                                '<button type="button" class="remove-image">×</button>' +
-                                '</div>'
-                            );
-                        }
+                    // Actualizar el campo oculto con los IDs de las imágenes
+                    var newIds = attachments.map(function(attachment) {
+                        return attachment.id.toString();
                     });
                     
-                    // Actualizar el valor del campo oculto con todas las imágenes (existentes + nuevas)
                     inputField.val(newIds.join(','));
                     
-                    // Reinicializar sortable después de añadir nuevas imágenes
-                    if (typeof $.fn.sortable !== 'undefined') {
-                        // Destruir el sortable existente si ya está inicializado
-                        if (galleryPreview.hasClass('ui-sortable')) {
-                            galleryPreview.sortable('destroy');
-                        }
-                        
-                        // Inicializar sortable con opciones optimizadas
-                        galleryPreview.sortable({
-                            items: '.gallery-image',
-                            cursor: 'move',
-                            opacity: 0.7,
-                            handle: '.drag-handle',
-                            placeholder: 'gallery-image-placeholder',
-                            tolerance: 'pointer',
-                            // Mejorar feedback visual durante el arrastre
-                            start: function(event, ui) {
-                                ui.item.addClass('being-dragged');
-                                ui.placeholder.css('visibility', 'visible');
-                            },
-                            stop: function(event, ui) {
-                                ui.item.removeClass('being-dragged');
-                            },
-                            update: function() {
-                                // Actualizar el orden de las imágenes en el campo oculto
-                                var updatedOrder = [];
-                                galleryPreview.find('.gallery-image').each(function() {
-                                    updatedOrder.push($(this).data('id'));
-                                });
-                                inputField.val(updatedOrder.join(','));
-                            }
-                        });
-                    }
+                    // Limpiar y reconstruir la vista previa
+                    $(previewSelector).empty();
                     
-                    // Reinicializar sortable después de añadir nuevas imágenes
-                    if (typeof $.fn.sortable !== 'undefined') {
-                        galleryPreview.sortable('destroy').sortable({
-                            items: '.gallery-image',
-                            cursor: 'move',
-                            opacity: 0.7,
-                            placeholder: 'gallery-image-placeholder',
-                            tolerance: 'pointer',
-                            handle: '.drag-handle',
-                            // Mejorar feedback visual durante el arrastre
-                            start: function(event, ui) {
-                                ui.item.addClass('being-dragged');
-                                ui.placeholder.css('visibility', 'visible');
-                            },
-                            stop: function(event, ui) {
-                                ui.item.removeClass('being-dragged');
-                            },
-                            update: function() {
-                                // Actualizar el orden de las imágenes en el campo oculto
-                                var updatedOrder = [];
-                                galleryPreview.find('.gallery-image').each(function() {
-                                    updatedOrder.push($(this).data('id'));
-                                });
-                                inputField.val(updatedOrder.join(','));
-                            }
-                        });
-                    }
+                    // Añadir cada imagen a la vista previa
+                    $.each(attachments, function(index, attachment) {
+                        var imageHtml = 
+                            '<div class="gallery-image" data-id="' + attachment.id + '">' +
+                                '<img src="' + (attachment.sizes.thumbnail ? attachment.sizes.thumbnail.url : attachment.url) + '" alt="' + attachment.alt + '">' +
+                                '<a href="#" class="remove-image">×</a>' +
+                                '<div class="drag-handle"></div>' +
+                                '<input type="text" class="image-caption" placeholder="Caption..." value="' + (attachment.caption || '') + '">' +
+                            '</div>';
+                        
+                        $(previewSelector).append(imageHtml);
+                    });
+                    
+                    // Inicializar sortable para la nueva galería
+                    initSortable(previewSelector, fieldName);
                 }
-            });
+            }
             
-            galleryFrame.open();
+            // SOLUCIÓN UNIFICADA: Siempre usar wp.media.gallery.edit
+            // Esto garantiza que las imágenes existentes siempre aparezcan seleccionadas
+            
+            // Crear un shortcode de galería (con o sin IDs)
+            var shortcode = '[gallery';
+            if (currentIds.length > 0) {
+                shortcode += ' ids="' + currentIds.join(',') + '"';
+            }
+            shortcode += ']';
+            
+            console.log('Usando shortcode:', shortcode);
+            
+            // Abrir el editor de galería con el shortcode
+            var frame = wp.media.gallery.edit(shortcode);
+            
+            // Cuando se actualiza la galería
+            frame.state('gallery-edit').on('update', function(selection) {
+                console.log('Selección actualizada, imágenes:', selection.length);
+                
+                // Obtener los attachments
+                var attachments = selection.map(function(attachment) {
+                    return attachment.toJSON();
+                });
+                
+                // Procesar la selección
+                processSelection(attachments);
+            });
         });
         
-        // Función para manejar la eliminación de imágenes de galería
-        function handleGalleryImageRemoval(e, fieldName) {
+        // Eliminar imagen de la galería (delegación de eventos)
+        $(document).on('click', '.remove-image', function(e) {
             e.preventDefault();
             e.stopPropagation();
             
-            var clickedButton = $(e.target);
-            var imageContainer = clickedButton.parent();
+            var imageContainer = $(this).closest('.gallery-image');
             var galleryPreview = imageContainer.closest('.images-preview');
+            var fieldName = galleryPreview.attr('id').replace('gallery-images-preview-', '');
             var imageId = imageContainer.data('id');
             var inputField = $('#gallery-images-input-' + fieldName);
-            var galleryIds = inputField.val().split(',');
+            var galleryIds = inputField.val() ? inputField.val().split(',') : [];
             
             galleryIds = galleryIds.filter(function(id) {
                 return id != imageId;
@@ -690,13 +548,13 @@
                     galleryPreview.hide();
                 }
             });
-        }
+        });
         
-        // Eliminar imagen de la galería (delegación de eventos)
-        $(document).on('click', '.remove-image', function(e) {
-            var fieldName = $(this).closest('.gallery-container').find('.upload-gallery-images').data('field');
-            handleGalleryImageRemoval(e, fieldName);
+        // Inicializar sortable para galerías existentes
+        $('.images-preview').each(function() {
+            var fieldName = $(this).attr('id').replace('gallery-images-preview-', '');
+            initSortable('#' + $(this).attr('id'), fieldName);
         });
     });
     
-})(jQuery); 
+})(jQuery);

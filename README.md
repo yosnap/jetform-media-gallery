@@ -2,7 +2,7 @@
 
 Plugin para WordPress que agrega un campo de galería de medios para JetFormBuilder, permitiendo seleccionar imagen destacada y galería para el CPT "singlecar".
 
-## Versión 1.1.2
+## Versión 1.1.5
 
 ## Características
 
@@ -33,6 +33,29 @@ Añade un campo HTML personalizado y dentro agrega el siguiente shortcode:
 
 - `field`: (requerido) Nombre del campo configurado en el panel de administración
 - `required`: (opcional) Si es requerido, usar '1' para requerido, '0' para opcional
+
+## Novedades en la versión 1.1.5
+
+- **Mejora de los checkboxes de selección**: Optimizada la visibilidad de los checkboxes en el modo "Add to gallery" para identificar claramente las imágenes seleccionadas.
+- **Selección consistente de imágenes**: Implementado un enfoque unificado usando wp.media.gallery.edit para garantizar que las imágenes existentes aparezcan siempre seleccionadas.
+- **Mejoras responsive**: Optimizados los estilos para botones y controles en dispositivos móviles.
+- **Mejor visibilidad de controles**: Añadidos estilos específicos para mejorar la visibilidad del selector "Menu" en la interfaz.
+- **Optimización de la experiencia de usuario**: Simplificado el flujo de trabajo para añadir imágenes a galerías existentes.
+
+## Novedades en la versión 1.1.4
+
+- **Mejora del explorador de medios**: Implementado comportamiento inteligente que abre el explorador en modo "Edit Gallery" cuando hay imágenes existentes y en modo "Create Gallery" cuando el campo está vacío.
+- **Optimización de la selección de imágenes**: Mejorada la experiencia de selección múltiple para mantener todas las imágenes seleccionadas.
+- **Eliminación de imágenes mejorada**: Corregido el problema donde las imágenes eliminadas no se quitaban correctamente del listado al actualizar la galería.
+- **Mejora visual de controles**: Eliminados los checks que interferían con el botón X para eliminar imágenes de la galería.
+- **Optimización para dispositivos móviles**: Mejorada la interfaz para facilitar la selección y ordenamiento en pantallas táctiles.
+
+## Novedades en la versión 1.1.3
+
+- **Filtrado de tipos de archivos por campo**: Ahora cada campo puede configurarse para permitir tipos específicos de archivos (imágenes, vídeos, documentos, audio).
+- **Opciones predefinidas**: Selección rápida entre categorías comunes de archivos (solo imágenes, solo vídeos, solo documentos, solo audio).
+- **Personalización avanzada**: Opción para seleccionar tipos MIME específicos para cada campo (JPEG, PNG, GIF, WebP, AVIF, PDF, MP4, MOV, MP3, WAV).
+- **Experiencia de usuario mejorada**: La biblioteca de medios de WordPress se filtra automáticamente según los tipos de archivos permitidos para cada campo.
 
 ## Novedades en la versión 1.1.2
 

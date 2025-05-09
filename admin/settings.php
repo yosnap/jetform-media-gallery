@@ -803,6 +803,124 @@ class JetForm_Media_Gallery_Admin {
                         Campo requerido
                     </label>
                 </p>
+                
+                <?php if ($field['type'] === 'gallery'): // Solo mostrar opciones de tipos de archivo para galerías ?>
+                <p>
+                    <label>
+                        Tipos de archivos permitidos:
+                        <select name="<?php echo $this->option_name; ?>[image_fields][<?php echo $index; ?>][allowed_types]" class="allowed-types-selector">
+                            <option value="all" <?php selected(isset($field['allowed_types']) ? $field['allowed_types'] : 'all', 'all'); ?>>Todos los archivos</option>
+                            <option value="images" <?php selected(isset($field['allowed_types']) ? $field['allowed_types'] : '', 'images'); ?>>Solo imágenes</option>
+                            <option value="videos" <?php selected(isset($field['allowed_types']) ? $field['allowed_types'] : '', 'videos'); ?>>Solo videos</option>
+                            <option value="documents" <?php selected(isset($field['allowed_types']) ? $field['allowed_types'] : '', 'documents'); ?>>Solo documentos</option>
+                            <option value="audio" <?php selected(isset($field['allowed_types']) ? $field['allowed_types'] : '', 'audio'); ?>>Solo audio</option>
+                            <option value="custom" <?php selected(isset($field['allowed_types']) ? $field['allowed_types'] : '', 'custom'); ?>>Personalizado</option>
+                        </select>
+                    </label>
+                </p>
+                
+                <div class="custom-file-types" style="display: <?php echo (isset($field['allowed_types']) && $field['allowed_types'] === 'custom') ? 'block' : 'none'; ?>; padding: 10px; background: #f9f9f9; border: 1px solid #ddd; margin-bottom: 10px;">
+                    <p><strong>Selecciona los tipos de archivos permitidos:</strong></p>
+                    
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <label style="flex: 0 0 30%;">
+                            <input type="checkbox" 
+                                   name="<?php echo $this->option_name; ?>[image_fields][<?php echo $index; ?>][custom_types][]" 
+                                   value="image/jpeg"
+                                   <?php checked(isset($field['custom_types']) && is_array($field['custom_types']) && in_array('image/jpeg', $field['custom_types'])); ?>>
+                            JPEG (.jpg, .jpeg)
+                        </label>
+                        
+                        <label style="flex: 0 0 30%;">
+                            <input type="checkbox" 
+                                   name="<?php echo $this->option_name; ?>[image_fields][<?php echo $index; ?>][custom_types][]" 
+                                   value="image/png"
+                                   <?php checked(isset($field['custom_types']) && is_array($field['custom_types']) && in_array('image/png', $field['custom_types'])); ?>>
+                            PNG (.png)
+                        </label>
+                        
+                        <label style="flex: 0 0 30%;">
+                            <input type="checkbox" 
+                                   name="<?php echo $this->option_name; ?>[image_fields][<?php echo $index; ?>][custom_types][]" 
+                                   value="image/gif"
+                                   <?php checked(isset($field['custom_types']) && is_array($field['custom_types']) && in_array('image/gif', $field['custom_types'])); ?>>
+                            GIF (.gif)
+                        </label>
+                        
+                        <label style="flex: 0 0 30%;">
+                            <input type="checkbox" 
+                                   name="<?php echo $this->option_name; ?>[image_fields][<?php echo $index; ?>][custom_types][]" 
+                                   value="image/webp"
+                                   <?php checked(isset($field['custom_types']) && is_array($field['custom_types']) && in_array('image/webp', $field['custom_types'])); ?>>
+                            WebP (.webp)
+                        </label>
+                        
+                        <label style="flex: 0 0 30%;">
+                            <input type="checkbox" 
+                                   name="<?php echo $this->option_name; ?>[image_fields][<?php echo $index; ?>][custom_types][]" 
+                                   value="image/avif"
+                                   <?php checked(isset($field['custom_types']) && is_array($field['custom_types']) && in_array('image/avif', $field['custom_types'])); ?>>
+                            AVIF (.avif)
+                        </label>
+                        
+                        <label style="flex: 0 0 30%;">
+                            <input type="checkbox" 
+                                   name="<?php echo $this->option_name; ?>[image_fields][<?php echo $index; ?>][custom_types][]" 
+                                   value="application/pdf"
+                                   <?php checked(isset($field['custom_types']) && is_array($field['custom_types']) && in_array('application/pdf', $field['custom_types'])); ?>>
+                            PDF (.pdf)
+                        </label>
+                        
+                        <label style="flex: 0 0 30%;">
+                            <input type="checkbox" 
+                                   name="<?php echo $this->option_name; ?>[image_fields][<?php echo $index; ?>][custom_types][]" 
+                                   value="video/mp4"
+                                   <?php checked(isset($field['custom_types']) && is_array($field['custom_types']) && in_array('video/mp4', $field['custom_types'])); ?>>
+                            Video MP4 (.mp4)
+                        </label>
+                        
+                        <label style="flex: 0 0 30%;">
+                            <input type="checkbox" 
+                                   name="<?php echo $this->option_name; ?>[image_fields][<?php echo $index; ?>][custom_types][]" 
+                                   value="video/quicktime"
+                                   <?php checked(isset($field['custom_types']) && is_array($field['custom_types']) && in_array('video/quicktime', $field['custom_types'])); ?>>
+                            Video QuickTime (.mov)
+                        </label>
+                        
+                        <label style="flex: 0 0 30%;">
+                            <input type="checkbox" 
+                                   name="<?php echo $this->option_name; ?>[image_fields][<?php echo $index; ?>][custom_types][]" 
+                                   value="audio/mpeg"
+                                   <?php checked(isset($field['custom_types']) && is_array($field['custom_types']) && in_array('audio/mpeg', $field['custom_types'])); ?>>
+                            Audio MP3 (.mp3)
+                        </label>
+                        
+                        <label style="flex: 0 0 30%;">
+                            <input type="checkbox" 
+                                   name="<?php echo $this->option_name; ?>[image_fields][<?php echo $index; ?>][custom_types][]" 
+                                   value="audio/wav"
+                                   <?php checked(isset($field['custom_types']) && is_array($field['custom_types']) && in_array('audio/wav', $field['custom_types'])); ?>>
+                            Audio WAV (.wav)
+                        </label>
+                        
+                        <label style="flex: 0 0 30%;">
+                            <input type="checkbox" 
+                                   name="<?php echo $this->option_name; ?>[image_fields][<?php echo $index; ?>][custom_types][]" 
+                                   value="application/msword"
+                                   <?php checked(isset($field['custom_types']) && is_array($field['custom_types']) && in_array('application/msword', $field['custom_types'])); ?>>
+                            Word (.doc)
+                        </label>
+                        
+                        <label style="flex: 0 0 30%;">
+                            <input type="checkbox" 
+                                   name="<?php echo $this->option_name; ?>[image_fields][<?php echo $index; ?>][custom_types][]" 
+                                   value="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                   <?php checked(isset($field['custom_types']) && is_array($field['custom_types']) && in_array('application/vnd.openxmlformats-officedocument.wordprocessingml.document', $field['custom_types'])); ?>>
+                            Word (.docx)
+                        </label>
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <?php if (!empty($field['name'])) : ?>
                 <div class="shortcode-preview" style="background: #f5f5f5; padding: 15px; border-radius: 4px; margin: 10px 0;">
@@ -834,6 +952,55 @@ class JetForm_Media_Gallery_Admin {
         jQuery(document).ready(function($) {
             var container = $('#image-fields-container');
             var fieldCount = <?php echo count($fields); ?>;
+            
+            // Manejar la visualización de tipos de archivos personalizados
+            $(document).on('change', 'select[name*="[allowed_types]"]', function() {
+                var customTypesDiv = $(this).closest('.image-field-row').find('.custom-file-types');
+                
+                if ($(this).val() === 'custom') {
+                    customTypesDiv.slideDown();
+                } else {
+                    customTypesDiv.slideUp();
+                }
+            });
+            
+            // Mostrar/ocultar opciones de tipos de archivos según el tipo de campo
+            $(document).on('change', 'select[name*="[type]"]', function() {
+                var fieldContainer = $(this).closest('.image-field-row');
+                var allowedTypesSection = fieldContainer.find('select[name*="[allowed_types]"]').closest('p');
+                var customTypesDiv = fieldContainer.find('.custom-file-types');
+                
+                if ($(this).val() === 'gallery') {
+                    allowedTypesSection.slideDown();
+                    // Verificar si el tipo seleccionado es personalizado para mostrar esa sección también
+                    if (fieldContainer.find('select[name*="[allowed_types]"]').val() === 'custom') {
+                        customTypesDiv.slideDown();
+                    }
+                } else {
+                    allowedTypesSection.slideUp();
+                    customTypesDiv.slideUp();
+                }
+            });
+            
+            // Inicializar el estado de las secciones de tipos de archivos al cargar la página
+            $('select[name*="[type]"]').each(function() {
+                var fieldContainer = $(this).closest('.image-field-row');
+                var allowedTypesSection = fieldContainer.find('select[name*="[allowed_types]"]').closest('p');
+                var customTypesDiv = fieldContainer.find('.custom-file-types');
+                
+                if ($(this).val() === 'gallery') {
+                    allowedTypesSection.show();
+                    // Verificar si el tipo seleccionado es personalizado
+                    if (fieldContainer.find('select[name*="[allowed_types]"]').val() === 'custom') {
+                        customTypesDiv.show();
+                    } else {
+                        customTypesDiv.hide();
+                    }
+                } else {
+                    allowedTypesSection.hide();
+                    customTypesDiv.hide();
+                }
+            });
 
             // Función para actualizar el shortcode de un campo específico
             function updateFieldShortcode(fieldRow) {
@@ -1103,10 +1270,34 @@ class JetForm_Media_Gallery_Admin {
         // Sanitizar campos de imágenes
         if (isset($input['image_fields']) && is_array($input['image_fields'])) {
             foreach ($input['image_fields'] as $index => $field) {
-                $sanitized['image_fields'][$index] = [
+                $type = in_array($field['type'], ['single', 'gallery']) ? $field['type'] : 'single';
+                $allowed_types = 'all';
+                $custom_types = [];
+                
+                // Solo procesar tipos de archivos permitidos para campos de tipo galería
+                if ($type === 'gallery') {
+                    $allowed_types = isset($field['allowed_types']) ? sanitize_text_field($field['allowed_types']) : 'all';
+                    
+                    // Sanitizar tipos de archivos personalizados si están presentes
+                    if ($allowed_types === 'custom' && isset($field['custom_types']) && is_array($field['custom_types'])) {
+                        $valid_mime_types = [
+                            'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif',
+                            'application/pdf', 'video/mp4', 'video/quicktime', 'audio/mpeg', 'audio/wav',
+                            'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                        ];
+                        
+                        foreach ($field['custom_types'] as $mime_type) {
+                            if (in_array($mime_type, $valid_mime_types)) {
+                                $custom_types[] = $mime_type;
+                            }
+                        }
+                    }
+                }
+                
+                $field_data = [
                     'name' => sanitize_key($field['name']),
                     'label' => sanitize_text_field($field['label']),
-                    'type' => in_array($field['type'], ['single', 'gallery']) ? $field['type'] : 'single',
+                    'type' => $type,
                     'meta_type' => in_array($field['meta_type'], ['native', 'acf', 'jetengine', 'metabox']) 
                         ? $field['meta_type'] 
                         : 'native',
@@ -1114,6 +1305,14 @@ class JetForm_Media_Gallery_Admin {
                     'post_type' => sanitize_key($field['post_type']),
                     'required' => !empty($field['required'])
                 ];
+                
+                // Solo añadir configuración de tipos de archivos para campos de galería
+                if ($type === 'gallery') {
+                    $field_data['allowed_types'] = $allowed_types;
+                    $field_data['custom_types'] = $custom_types;
+                }
+                
+                $sanitized['image_fields'][$index] = $field_data;
             }
         }
         

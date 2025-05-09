@@ -2,7 +2,7 @@
 /**
  * Plugin Name: JetFormBuilder Media Gallery Field
  * Description: Agrega un campo de galería de medios para JetFormBuilder que permite seleccionar imagen destacada y galería para el CPT "singlecar"
- * Version: 1.1.2
+ * Version: 1.1.5
  * Author: Sn4p.dev
  * Text Domain: jetform-media-gallery
  */
@@ -54,6 +54,26 @@
  * 
  * CHANGELOG:
  * ---------
+ * 1.1.5
+ * - Mejorada la visibilidad de los checkboxes en el modo "Add to gallery" para identificar claramente las imágenes seleccionadas
+ * - Optimizado el comportamiento de selección de imágenes para mantener la selección al cambiar entre modos
+ * - Implementado enfoque unificado usando wp.media.gallery.edit para garantizar consistencia en la selección
+ * - Mejorados los estilos responsive para botones y controles en dispositivos móviles
+ * - Añadidos estilos específicos para mejorar la visibilidad del selector "Menu" en la interfaz
+ * 
+ * 1.1.4
+ * - Implementado comportamiento inteligente del explorador de medios: modo "Edit Gallery" para campos con imágenes y "Create Gallery" para campos vacíos
+ * - Mejorada la experiencia de selección múltiple para mantener todas las imágenes seleccionadas
+ * - Corregido el problema donde las imágenes eliminadas no se quitaban correctamente del listado
+ * - Eliminados los checks que interferían con el botón X para eliminar imágenes
+ * - Optimizada la interfaz para facilitar la selección y ordenamiento en dispositivos móviles
+ * 
+ * 1.1.3
+ * - Implementado filtrado de tipos de archivos por campo (imágenes, vídeos, documentos, audio)
+ * - Añadidas opciones predefinidas para selección rápida entre categorías comunes de archivos
+ * - Agregada personalización avanzada para seleccionar tipos MIME específicos
+ * - Mejorada la experiencia de usuario con filtrado automático de la biblioteca de medios
+ * 
  * 1.1.2
  * - Implementado panel de administración para personalizar el icono de ordenamiento (color, tamaño, posición, opacidad)
  * - Mejorada la experiencia de arrastre para que el cursor solo cambie al pasar sobre el icono
@@ -138,7 +158,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Definir constantes
-define('JFB_MEDIA_GALLERY_VERSION', '1.1.2');
+define('JFB_MEDIA_GALLERY_VERSION', '1.1.5');
 define('JFB_MEDIA_GALLERY_PATH', plugin_dir_path(__FILE__));
 define('JFB_MEDIA_GALLERY_URL', plugin_dir_url(__FILE__));
 

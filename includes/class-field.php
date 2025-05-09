@@ -232,6 +232,49 @@ class JetForm_Media_Gallery_Field {
             );
             
             // Localizar el script con datos que pueda necesitar
+            // Obtener la configuración de campos
+            $settings = $this->main->get_settings();
+            $fields = isset($settings['image_fields']) ? $settings['image_fields'] : [];
+            
+            // Preparar la configuración de tipos de archivos permitidos para cada campo
+            $field_configs = [];
+            foreach ($fields as $field) {
+                if (empty($field['name'])) {
+                    continue;
+                }
+                
+                // Para campos de imagen destacada, siempre permitir imágenes
+                if ($field['type'] === 'single') {
+                    $field_configs[$field['name']] = [
+                        'allowed_types' => 'images',
+                        'mime_types' => ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif']
+                    ];
+                    continue;
+                }
+                
+                // Solo procesar configuración de tipos de archivos para campos de galería
+                $allowed_types = isset($field['allowed_types']) ? $field['allowed_types'] : 'all';
+                $mime_types = [];
+                
+                // Determinar los tipos MIME permitidos según la configuración
+                if ($allowed_types === 'custom' && !empty($field['custom_types'])) {
+                    $mime_types = $field['custom_types'];
+                } elseif ($allowed_types === 'images') {
+                    $mime_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif'];
+                } elseif ($allowed_types === 'videos') {
+                    $mime_types = ['video/mp4', 'video/quicktime', 'video/webm', 'video/ogg'];
+                } elseif ($allowed_types === 'documents') {
+                    $mime_types = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+                } elseif ($allowed_types === 'audio') {
+                    $mime_types = ['audio/mpeg', 'audio/wav', 'audio/ogg'];
+                }
+                
+                $field_configs[$field['name']] = [
+                    'allowed_types' => $allowed_types,
+                    'mime_types' => $mime_types
+                ];
+            }
+            
             wp_localize_script('jetform-media-gallery', 'JetFormMediaGallery', [
                 'i18n' => [
                     'selectFeaturedImage' => __('Seleccionar imagen destacada', 'jetform-media-gallery'),
@@ -240,7 +283,8 @@ class JetForm_Media_Gallery_Field {
                     'addToGallery' => __('Añadir a la galería', 'jetform-media-gallery')
                 ],
                 'is_ios' => $is_ios,
-                'is_mobile' => wp_is_mobile()
+                'is_mobile' => wp_is_mobile(),
+                'field_configs' => $field_configs
             ]);
             
             // Encolar el script
