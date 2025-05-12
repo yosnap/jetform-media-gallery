@@ -50,6 +50,24 @@ class JetForm_Media_Gallery_Main {
         
         // Configurar hooks
         $this->setup_hooks();
+        
+        // Filtrar la biblioteca de medios para usuarios no administradores
+        add_filter('ajax_query_attachments_args', array($this, 'filter_media_library_by_current_user'), 10, 1);
+    }
+    
+    /**
+     * Filtrar la biblioteca de medios para mostrar solo las imágenes del usuario actual
+     * 
+     * @param array $query Parámetros de la consulta de adjuntos
+     * @return array Parámetros modificados
+     */
+    public function filter_media_library_by_current_user($query) {
+        // Solo aplicar el filtro si el usuario no es administrador
+        if (!current_user_can('manage_options') && !current_user_can('edit_others_posts')) {
+            $query['author'] = get_current_user_id();
+            $this->log_debug("Filtrando biblioteca de medios para el usuario ID: " . get_current_user_id());
+        }
+        return $query;
     }
     
     /**

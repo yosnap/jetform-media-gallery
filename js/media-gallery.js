@@ -165,67 +165,83 @@
                     border-radius: 4px;
                 }
                 
-                /* Mostrar checks en modo "Add to gallery" para permitir selección/deselección */
-                .media-modal .attachment .check {
-                    display: block !important;
-                    opacity: 1 !important;
-                    background: rgba(0, 0, 0, 0.5) !important;
-                    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5) !important;
-                    border: none !important;
-                    width: 24px !important;
-                    height: 24px !important;
-                    z-index: 100 !important;
-                }
-                
-                .media-modal .attachment.selected .check {
-                    display: block !important;
-                    opacity: 1 !important;
-                    background: #0073aa !important;
-                    box-shadow: 0 0 0 1px #fff !important;
-                    z-index: 100 !important;
-                }
-                
-                /* Estilo para el icono de verificación */
-                .media-modal .attachment .check:after {
-                    content: '✓' !important;
-                    color: #fff !important;
-                    font-size: 16px !important;
-                    position: absolute !important;
-                    top: 50% !important;
-                    left: 50% !important;
-                    transform: translate(-50%, -50%) !important;
-                    font-weight: bold !important;
-                }
-                
-                /* Estilos específicos para el checkbox */
-                .media-modal .attachment .check div,
-                .media-modal .attachment.selected .check div {
-                    display: none !important;
-                }
-                
                 /* Asegurar que el botón X para eliminar siga visible */
                 .gallery-image .remove-image {
                     z-index: 200 !important;
                 }
                 
-                /* Ajustar posición del checkbox para evitar solapamientos */
-                .media-modal .attachment .check {
-                    top: 5px !important;
-                    right: 5px !important;
+                /* Ocultar la barra lateral y ajustar el ancho del contenido */
+                .media-modal .media-sidebar {
+                    display: none !important;
+                }
+                
+                /* Hacer que el contenido principal ocupe todo el ancho disponible */
+                .media-modal .media-frame-content,
+                .media-modal .attachments-browser .media-toolbar,
+                .media-modal .attachments-browser .attachments,
+                .media-modal .media-frame.mode-select .attachments-browser {
+                    right: 0 !important;
+                    width: 100% !important;
+                }
+                
+                /* Corregir el solapamiento en la parte superior */
+                .media-frame-title {
+                    display: none !important;
+                }
+                
+                /* Ajustar el menú para que se vea correctamente */
+                .media-frame-menu-heading {
+                    display: none !important;
+                }
+                
+                /* Ocultar el botón de menú que causa solapamiento */
+                .media-frame-menu-toggle {
+                    display: none !important;
+                }
+                
+                /* Corregir el color de texto de todos los botones en el explorador de medios */
+                .media-modal .button-primary,
+                .media-modal .media-button-select,
+                .media-modal .media-button-insert,
+                .media-modal .button.media-button-select,
+                .media-modal .button.button-primary,
+                .media-modal .button.media-button-insert,
+                .media-modal .button.button-large,
+                .media-modal .button.button-hero,
+                .media-modal .button.button-primary.button-large,
+                .media-modal .button.button-primary.button-hero {
+                    color: #fff !important;
+                    text-shadow: none !important;
+                }
+                
+                /* Asegurar que los botones azules tengan el texto blanco */
+                .media-modal .button.button-primary {
+                    background: #2271b1 !important;
+                    border-color: #2271b1 !important;
+                    color: #fff !important;
                 }
                 
                 /* Mejorar responsive del explorador de galerías */
                 .media-frame select.media-attachment-filters,
                 .media-frame .media-menu select {
-                    min-width: 200px !important;
-                    width: auto !important;
                     max-width: 100% !important;
-                    font-size: 16px !important;
+                    min-width: 150px !important;
+                    font-size: 14px !important;
+                }
+                
+                /* Contenedor del select para asegurar que ocupe el ancho correcto */
+                .media-frame .media-menu,
+                .media-frame .media-toolbar-secondary {
+                    width: 100% !important;
+                    padding: 10px !important;
+                    box-sizing: border-box !important;
+                }
+                
+                .media-toolbar-primary .button,
+                .media-toolbar-secondary .button {
+                    padding: 0 10px !important;
                     height: 36px !important;
-                    padding: 0 24px 0 8px !important;
-                    background-color: #fff !important;
-                    border: 1px solid #ddd !important;
-                    border-radius: 4px !important;
+                    line-height: 34px !important;
                     box-shadow: 0 1px 2px rgba(0,0,0,0.07) !important;
                     color: #32373c !important;
                     margin: 8px !important;
@@ -367,8 +383,9 @@
                 }
                 
                 var imageUrl = attachment.sizes.thumbnail ? attachment.sizes.thumbnail.url : attachment.url;
-                $(previewSelector).html('<img src="' + imageUrl + '" alt="' + attachment.alt + '"><a href="#" class="remove-featured-image">×</a>');
-                $(previewSelector).show();
+                // Restaurar el botón original
+                $(previewSelector).html('<div class="image-overlay"></div><img src="' + imageUrl + '" alt="' + attachment.alt + '"><a href="#" class="remove-featured-image">×</a>');
+                $(previewSelector).addClass('has-image').show();
             });
             
             featuredFrame.open();
@@ -377,16 +394,22 @@
         // Evento para eliminar la imagen destacada
         $(document).on('click', '.remove-featured-image', function(e) {
             e.preventDefault();
+            e.stopPropagation(); // Evitar propagación del evento
             
-            var previewContainer = $(this).closest('.featured-image-preview');
+            var previewContainer = $(this).closest('.image-preview');
             var fieldName = previewContainer.attr('id').replace('featured-image-preview-', '');
             var inputField = $('#featured-image-input-' + fieldName);
+            
+            console.log('Eliminando imagen destacada del campo:', fieldName);
             
             // Limpiar el campo oculto
             inputField.val('');
             
-            // Ocultar la vista previa
-            previewContainer.hide();
+            // Ocultar la vista previa y eliminar clase has-image
+            previewContainer.removeClass('has-image').hide();
+            
+            // Mantener la estructura HTML para futuros usos
+            previewContainer.html('<div class="image-overlay"></div><a href="#" class="remove-featured-image">×</a>');
         });
         
         // Función para inicializar sortable en la galería
@@ -419,7 +442,7 @@
         // Aplicar estilos al select Menu cuando aparezca en el DOM
         $(document).on('DOMNodeInserted', function(e) {
             if ($(e.target).is('select.media-menu') || $(e.target).find('select.media-menu').length > 0) {
-                console.log('Menu select detectado, aplicando estilos');
+                console.log('  select detectado, aplicando estilos');
                 
                 // Aplicar estilos directamente
                 $('select.media-menu').css({

@@ -284,7 +284,9 @@ class JetForm_Media_Gallery_Field {
                 ],
                 'is_ios' => $is_ios,
                 'is_mobile' => wp_is_mobile(),
-                'field_configs' => $field_configs
+                'field_configs' => $field_configs,
+                'current_user_id' => get_current_user_id(), // Añadimos el ID del usuario actual
+                'filter_by_author' => true // Opción para activar/desactivar el filtro por autor
             ]);
             
             // Encolar el script

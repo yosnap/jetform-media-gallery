@@ -2,7 +2,7 @@
 /**
  * Plugin Name: JetFormBuilder Media Gallery Field
  * Description: Agrega un campo de galería de medios para JetFormBuilder que permite seleccionar imagen destacada y galería para el CPT "singlecar"
- * Version: 1.1.6
+ * Version: 1.1.7
  * Author: Sn4p.dev
  * Text Domain: jetform-media-gallery
  */
@@ -54,6 +54,19 @@
  * 
  * CHANGELOG:
  * ---------
+ * 1.1.7
+ * - Implementado filtrado de la biblioteca de medios para mostrar solo las imágenes del usuario actual
+ * - Mejorada la interfaz del explorador de medios eliminando la barra lateral para dar más espacio a las imágenes
+ * - Corregido el problema con el botón de eliminar imagen destacada
+ * - Optimizada la interfaz del explorador de medios eliminando elementos innecesarios
+ * - Corregido el color del texto en los botones para mejorar la legibilidad
+ * - Eliminados los checkboxes que aparecían en la esquina superior derecha de las imágenes
+ * 
+ * 1.1.6
+ * - Corregido problema de compatibilidad con WordPress 6.3
+ * - Mejorada la experiencia de usuario en dispositivos móviles
+ * - Optimizado el rendimiento al cargar imágenes en la galería
+ * 
  * 1.1.5
  * - Mejorada la visibilidad de los checkboxes en el modo "Add to gallery" para identificar claramente las imágenes seleccionadas
  * - Optimizado el comportamiento de selección de imágenes para mantener la selección al cambiar entre modos
@@ -158,7 +171,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Definir constantes
-define('JFB_MEDIA_GALLERY_VERSION', '1.1.5');
+define('JFB_MEDIA_GALLERY_VERSION', '1.1.7');
 define('JFB_MEDIA_GALLERY_PATH', plugin_dir_path(__FILE__));
 define('JFB_MEDIA_GALLERY_URL', plugin_dir_url(__FILE__));
 
