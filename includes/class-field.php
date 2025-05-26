@@ -204,13 +204,13 @@ class JetForm_Media_Gallery_Field {
             wp_enqueue_script('wp-api');
             
             // Registrar jQuery UI Touch Punch para mejorar soporte táctil en dispositivos móviles
-            wp_register_script(
+            /*wp_register_script(
                 'jquery-ui-touch-punch',
                 JFB_MEDIA_GALLERY_URL . 'js/jquery.ui.touch-punch.min.js',
                 ['jquery', 'jquery-ui-sortable'],
                 '0.2.3',
                 true
-            );
+            );*/
             
             // Cargar Touch Punch para dispositivos móviles
             wp_enqueue_script('jquery-ui-touch-punch');
