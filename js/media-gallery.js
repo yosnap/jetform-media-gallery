@@ -236,7 +236,7 @@
                 .media-modal .button.button-primary,
                 .media-modal .button.media-button-insert,
                 .media-modal .button.button-large,
-                .media-modal .button.button-hero,
+                .media-modal,
                 .media-modal .button.button-primary.button-large,
                 .media-modal .button.button-primary.button-hero {
                     color: #fff !important;
@@ -260,11 +260,14 @@
                 
                 /* Contenedor del select para asegurar que ocupe el ancho correcto */
                 .media-frame .media-menu,
-                .media-frame .media-toolbar-secondary {
+                .media-frame {
                     width: 100% !important;
                     padding: 10px !important;
                     box-sizing: border-box !important;
                 }
+                .media-toolbar-secondary {
+                    width: 100% !important;
+    }    
                 
                 .media-toolbar-primary .button,
                 .media-toolbar-secondary .button {

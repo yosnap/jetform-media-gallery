@@ -40,7 +40,7 @@ class JetForm_Media_Gallery_Process {
         // Obtener los datos del formulario
         $form_data = isset($handler->form_data) ? $handler->form_data : [];
         
-        // Si form_data está vacío, intentar obtener de $_POST
+        // Si form_data está vacío, intentar obtener de datos POST
         if (empty($form_data)) {
             $form_data = $_POST;
             $this->main->log_debug("Usando datos de POST: " . print_r($form_data, true));
@@ -565,14 +565,14 @@ class JetForm_Media_Gallery_Process {
                 $form_data = jet_fb_action_handler()->request_data;
                 $this->main->log_debug("Datos extraídos del request_data del action_handler");
             } else {
-                // Si no podemos extraer los datos, usamos $_POST
+                // Si no podemos extraer los datos, usamos datos POST
                 $form_data = $_POST;
-                $this->main->log_debug("No se pudieron extraer datos, usando $_POST");
+                $this->main->log_debug("No se pudieron extraer datos, usando datos de POST");
             }
         } elseif (empty($form_data) || !is_array($form_data)) {
-            // Si no hay datos o no son un array, intentar obtenerlos de $_POST
+            // Si no hay datos o no son un array, intentar obtenerlos de datos POST
             $form_data = $_POST;
-            $this->main->log_debug("Usando $_POST como fuente de datos");
+            $this->main->log_debug("Usando datos de POST como fuente de datos");
         }
         
         $this->main->log_debug("Datos del formulario en save_post_images: " . print_r($form_data, true));

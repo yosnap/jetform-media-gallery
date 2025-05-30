@@ -2,7 +2,7 @@
 
 Plugin para WordPress que agrega un campo de galería de medios para JetFormBuilder, permitiendo seleccionar imagen destacada y galería para el CPT "singlecar".
 
-## Versión 1.1.7
+## Versión 1.1.9
 
 ## Características
 
@@ -15,7 +15,15 @@ Plugin para WordPress que agrega un campo de galería de medios para JetFormBuil
 - **Integración con JetFormBuilder**: Compatible con JetFormBuilder v1.x, v2.x y v3.x.
 - **Integración con JetEngine Forms**: Compatible con formularios de JetEngine.
 
-## Novedades en la versión 1.1.7
+## Novedades en la versión 1.1.9
+
+### Correcciones importantes
+- Corregido error PHP relacionado con el uso de $_POST dentro de cadenas de texto de mensajes de log
+- Aplicado correctamente el tamaño configurado a las imágenes de vista previa en el frontend
+- Mejorada la presentación visual de las imágenes al respetar los tamaños configurados
+- Optimizado el código JavaScript para usar las configuraciones globales de forma consistente
+
+## Novedades en la versión 1.1.8
 
 ### Filtrado de biblioteca por usuario
 - Ahora el explorador de medios muestra solo las imágenes subidas por el usuario actual

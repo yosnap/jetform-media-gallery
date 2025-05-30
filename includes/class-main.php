@@ -21,7 +21,7 @@ class JetForm_Media_Gallery_Main {
     /**
      * Version del plugin
      */
-    private $version = '1.1.1';
+    private $version = '1.1.9';
     
     /**
      * Configuraciones del plugin
