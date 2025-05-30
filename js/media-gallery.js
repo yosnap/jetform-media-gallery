@@ -1,30 +1,47 @@
 /**
  * JetForm Media Gallery - Manejo de galerías de imágenes
- * 
+ *
  * Este script maneja la funcionalidad para selección de imagen destacada
  * y galería de imágenes para formularios de JetFormBuilder.
  */
 
-(function($) {
-    'use strict';
-    
-    // Comprobar si el API de medios está disponible
-    if (typeof wp === 'undefined' || typeof wp.media === 'undefined') {
-        console.error('Error: wp.media no está disponible. Asegúrate de cargar los scripts de medios de WordPress.');
-        return;
-    }
-    
-    // Detectar si es un dispositivo móvil
-    var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    // Detectar específicamente si es iOS
-    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    
-    $(document).ready(function() {
-        console.log('JetForm Media Gallery inicializado');
-        
-        // Añadir estilos CSS para mejorar la apariencia y usabilidad
-        $('head').append(`
+(function ($) {
+  "use strict";
+
+  // Comprobar si el API de medios está disponible
+  if (typeof wp === "undefined" || typeof wp.media === "undefined") {
+    console.error(
+      "Error: wp.media no está disponible. Asegúrate de cargar los scripts de medios de WordPress."
+    );
+    return;
+  }
+
+  // Obtener dimensiones configuradas para las imágenes
+  var imageWidth =
+    typeof JetFormMediaGallery !== "undefined" &&
+    JetFormMediaGallery.image_width
+      ? JetFormMediaGallery.image_width
+      : 150;
+  var imageHeight =
+    typeof JetFormMediaGallery !== "undefined" &&
+    JetFormMediaGallery.image_height
+      ? JetFormMediaGallery.image_height
+      : 150;
+
+  // Detectar si es un dispositivo móvil
+  var isMobile =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    );
+
+  // Detectar específicamente si es iOS
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+  $(document).ready(function () {
+    console.log("JetForm Media Gallery inicializado");
+
+    // Añadir estilos CSS para mejorar la apariencia y usabilidad
+    $("head").append(`
             <style>
                 /* Estilos para el manejador de arrastre */
                 .gallery-image {
@@ -32,6 +49,18 @@
                     margin: 5px;
                     border-radius: 4px;
                     overflow: hidden;
+                    width: ${imageWidth}px;
+                    height: ${imageHeight}px;
+                }
+                .gallery-image img {
+                    width: ${imageWidth}px;
+                    height: ${imageHeight}px;
+                    object-fit: cover;
+                }
+                .featured-image-preview img {
+                    width: ${imageWidth}px;
+                    height: ${imageHeight}px;
+                    object-fit: cover;
                 }
                 .drag-handle {
                     position: absolute;
@@ -345,350 +374,438 @@
                 }
             </style>
         `);
-        
-        // Evento para abrir el explorador de medios para imagen destacada
-        $(document).on('click', '.upload-featured-image', function(e) {
-            e.preventDefault();
-            
-            var fieldName = $(this).data('field');
-            var controlsContainer = $(this).closest('.featured-image-controls');
-            var previewSelector = '#featured-image-preview-' + fieldName;
-            var inputField = $('#featured-image-input-' + fieldName);
-            
-            console.log('Abriendo selector de imagen destacada para el campo:', fieldName);
-            
-            // Configurar el frame de medios
-            var featuredFrame = wp.media({
-                title: 'Seleccionar imagen destacada',
-                library: {
-                    type: 'image'
-                },
-                button: {
-                    text: 'Establecer imagen destacada'
-                },
-                multiple: false
-            });
-            
-            // Cuando se selecciona una imagen
-            featuredFrame.on('select', function() {
-                var attachment = featuredFrame.state().get('selection').first().toJSON();
-                console.log('Imagen destacada seleccionada:', attachment);
-                
-                // Actualizar el campo oculto con el ID de la imagen
-                inputField.val(attachment.id);
-                
-                // Actualizar la vista previa
-                if ($(previewSelector).length === 0) {
-                    controlsContainer.after('<div id="' + previewSelector.substring(1) + '" class="featured-image-preview"></div>');
-                }
-                
-                var imageUrl = attachment.sizes.thumbnail ? attachment.sizes.thumbnail.url : attachment.url;
-                // Restaurar el botón original
-                $(previewSelector).html('<div class="image-overlay"></div><img src="' + imageUrl + '" alt="' + attachment.alt + '"><a href="#" class="remove-featured-image">×</a>');
-                $(previewSelector).addClass('has-image').show();
-            });
-            
-            featuredFrame.open();
-        });
-        
-        // Evento para eliminar la imagen destacada
-        $(document).on('click', '.remove-featured-image', function(e) {
-            e.preventDefault();
-            e.stopPropagation(); // Evitar propagación del evento
-            
-            var previewContainer = $(this).closest('.image-preview');
-            var fieldName = previewContainer.attr('id').replace('featured-image-preview-', '');
-            var inputField = $('#featured-image-input-' + fieldName);
-            
-            console.log('Eliminando imagen destacada del campo:', fieldName);
-            
-            // Limpiar el campo oculto
-            inputField.val('');
-            
-            // Ocultar la vista previa y eliminar clase has-image
-            previewContainer.removeClass('has-image').hide();
-            
-            // Mantener la estructura HTML para futuros usos
-            previewContainer.html('<div class="image-overlay"></div><a href="#" class="remove-featured-image">×</a>');
-        });
-        
-        // Función para inicializar sortable en la galería
-        function initSortable(previewSelector, fieldName) {
-            var galleryPreview = $(previewSelector);
-            
-            if (galleryPreview.length > 0 && !galleryPreview.hasClass('ui-sortable')) {
-                galleryPreview.sortable({
-                    items: '.gallery-image',
-                    handle: '.drag-handle',
-                    placeholder: 'ui-sortable-placeholder',
-                    start: function(event, ui) {
-                        ui.item.addClass('being-dragged');
-                        ui.placeholder.css('visibility', 'visible');
-                    },
-                    stop: function(event, ui) {
-                        ui.item.removeClass('being-dragged');
-                        
-                        // Actualizar el orden de las imágenes en el campo oculto
-                        var updatedOrder = [];
-                        galleryPreview.find('.gallery-image').each(function() {
-                            updatedOrder.push($(this).data('id'));
-                        });
-                        $('#gallery-images-input-' + fieldName).val(updatedOrder.join(','));
-                    }
-                });
-            }
-        }
-        
-        // Aplicar estilos al select Menu cuando aparezca en el DOM
-        $(document).on('DOMNodeInserted', function(e) {
-            if ($(e.target).is('select.media-menu') || $(e.target).find('select.media-menu').length > 0) {
-                console.log('  select detectado, aplicando estilos');
-                
-                // Aplicar estilos directamente
-                $('select.media-menu').css({
-                    'min-width': '200px',
-                    'width': '200px',
-                    'max-width': '100%',
-                    'font-size': '16px',
-                    'height': '40px',
-                    'padding': '5px 24px 5px 10px',
-                    'background-color': '#fff',
-                    'border': '1px solid #8c8f94',
-                    'border-radius': '4px',
-                    'box-shadow': '0 0 0 transparent',
-                    'color': '#2c3338',
-                    'margin': '8px',
-                    '-webkit-appearance': 'menulist',
-                    'appearance': 'menulist'
-                });
-            }
-        });
-        
-        // Variable global para almacenar frames activos
-        var activeFrames = {};
-        
-        // Evento para abrir el explorador de medios para galerías
-        $(document).on('click', '.upload-gallery-images', function(e) {
-            e.preventDefault();
-            
-            var $button = $(this);
-            var fieldName = $button.data('field');
-            
-            // Si ya hay un frame activo para este campo, cérralo primero
-            if (activeFrames[fieldName]) {
-                activeFrames[fieldName].close();
-                delete activeFrames[fieldName];
-            }
-            
-            var controlsContainer = $button.closest('.gallery-controls');
-            var previewSelector = '#gallery-images-preview-' + fieldName;
-            var inputField = $('#gallery-images-input-' + fieldName);
-            var currentIds = inputField.val() ? inputField.val().split(',').filter(Boolean) : [];
-            
-            console.log('Abriendo selector de galería para el campo:', fieldName);
-            console.log('IDs actuales:', currentIds);
-            
-            // Función para procesar la selección de imágenes
-            function processSelection(attachments) {
-                console.log('Procesando selección de imágenes:', attachments.length);
-                
-                if (attachments.length > 0) {
-                    // Asegurarse de que el contenedor de galería exista y sea visible
-                    if ($(previewSelector).length === 0) {
-                        controlsContainer.after('<div id="' + previewSelector.substring(1) + '" class="images-preview"></div>');
-                    }
-                    $(previewSelector).show();
-                    
-                    // Actualizar el campo oculto con los IDs de las imágenes
-                    var newIds = attachments.map(function(attachment) {
-                        return attachment.id.toString();
-                    });
-                    
-                    console.log('Nuevos IDs de imágenes:', newIds);
-                    inputField.val(newIds.join(','));
-                    
-                    // Limpiar y reconstruir la vista previa
-                    $(previewSelector).empty();
-                    
-                    // Añadir cada imagen a la vista previa
-                    $.each(attachments, function(index, attachment) {
-                        var imageHtml = 
-                            '<div class="gallery-image" data-id="' + attachment.id + '">' +
-                                '<img src="' + (attachment.sizes.thumbnail ? attachment.sizes.thumbnail.url : attachment.url) + '" alt="' + attachment.alt + '">' +
-                                '<a href="#" class="remove-image">×</a>' +
-                                '<div class="drag-handle"></div>' +
-                                '<input type="text" class="image-caption" placeholder="Caption..." value="' + (attachment.caption || '') + '">' +
-                            '</div>';
-                        
-                        $(previewSelector).append(imageHtml);
-                        console.log('Añadida imagen a la vista previa:', attachment.id);
-                    });
-                    
-                    // Inicializar sortable para la nueva galería
-                    initSortable(previewSelector, fieldName);
-                }
-            }
-            
-            // Usar diferentes enfoques dependiendo de si hay imágenes existentes o no
-            try {
-                var frame;
-                
-                // Siempre usar el enfoque de creación de galería para evitar problemas
-                // cuando se han eliminado todas las imágenes
-                console.log('Creando frame para selección de imágenes, IDs actuales:', currentIds.length);
-                
-                // Configuración común para ambos modos
-                var frameOptions = {
-                    multiple: true,
-                    library: {
-                        type: 'image'
-                    }
-                };
-                
-                // Usar diferentes enfoques dependiendo de si hay imágenes existentes o no
-                if (currentIds.length > 0) {
-                    // Si hay imágenes, usar el editor de galería con las imágenes existentes
-                    var shortcode = '[gallery ids="' + currentIds.join(',') + '"]';
-                    console.log('Usando shortcode con IDs:', shortcode);
-                    
-                    // Crear el frame de edición de galería
-                    frame = wp.media.gallery.edit(shortcode);
-                    
-                    // Guardar referencia al frame activo
-                    activeFrames[fieldName] = frame;
-                    
-                    // Ocultar los ajustes de galería
-                    frame.on('open', function() {
-                        setTimeout(function() {
-                            $('.gallery-settings').hide();
-                        }, 100);
-                    });
-                    
-                    // Cuando se actualiza la galería
-                    frame.state('gallery-edit').on('update', function(selection) {
-                        console.log('Selección actualizada en modo Edit gallery, imágenes:', selection.length);
-                        
-                        try {
-                            // Obtener los attachments
-                            var attachments = [];
-                            selection.each(function(attachment) {
-                                attachments.push(attachment.toJSON());
-                            });
-                            
-                            // Procesar la selección
-                            processSelection(attachments);
-                            
-                            // Eliminar referencia al frame
-                            delete activeFrames[fieldName];
-                        } catch (error) {
-                            console.error('Error al procesar la selección:', error);
-                        }
-                    });
-                } else {
-                    // Si no hay imágenes, usar un enfoque simplificado que siempre funciona
-                    console.log('Creando nueva galería sin imágenes preseleccionadas');
-                    
-                    // Usar un enfoque más simple y directo para la selección de imágenes
-                    frame = wp.media({
-                        title: 'Seleccionar Imágenes',
-                        button: {
-                            text: 'Añadir a la galería'
-                        },
-                        library: {
-                            type: 'image'
-                        },
-                        multiple: true
-                    });
-                    
-                    // Guardar referencia al frame activo
-                    activeFrames[fieldName] = frame;
-                    
-                    // Cuando se abre el selector de medios
-                    frame.on('open', function() {
-                        console.log('Frame abierto para selección de imágenes');
-                    });
-                    
-                    // Cuando se seleccionan imágenes (usando el evento 'select' estándar)
-                    frame.on('select', function() {
-                        var selection = frame.state().get('selection');
-                        console.log('Imágenes seleccionadas:', selection.length);
-                        
-                        try {
-                            // Obtener los attachments
-                            var attachments = [];
-                            selection.each(function(attachment) {
-                                attachments.push(attachment.toJSON());
-                            });
-                            
-                            // Procesar la selección
-                            processSelection(attachments);
-                            
-                            // Eliminar referencia al frame
-                            delete activeFrames[fieldName];
-                        } catch (error) {
-                            console.error('Error al procesar la selección:', error);
-                        }
-                    });
-                    
-                    // Abrir el frame
-                    frame.open();
-                }
-            } catch (error) {
-                console.error('Error al abrir el explorador de medios:', error);
-            }
 
-        });
-        
-        // Eliminar imagen de la galería (delegación de eventos)
-        $(document).on('click', '.remove-image', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            var imageContainer = $(this).closest('.gallery-image');
-            var galleryPreview = imageContainer.closest('.images-preview');
-            var fieldName = galleryPreview.attr('id').replace('gallery-images-preview-', '');
-            var imageId = imageContainer.data('id');
-            var inputField = $('#gallery-images-input-' + fieldName);
-            var galleryIds = inputField.val() ? inputField.val().split(',') : [];
-            
-            galleryIds = galleryIds.filter(function(id) {
-                return id != imageId;
-            });
-            
-            // Actualizar el valor del campo oculto
-            inputField.val(galleryIds.join(','));
-            
-            // Eliminar la imagen de la vista previa
-            imageContainer.fadeOut(300, function() {
-                $(this).remove();
-                
-                // Si no quedan imágenes, ocultar el contenedor de galería pero mantener el campo actualizado
-                if (galleryPreview.children('.gallery-image').length === 0) {
-                    galleryPreview.hide();
-                    console.log('Todas las imágenes han sido eliminadas del campo:', fieldName);
-                }
-            });
-        });
-        
-        // Inicializar sortable para galerías existentes y asegurar que los iconos de ordenamiento sean visibles
-        $('.images-preview').each(function() {
-            var fieldName = $(this).attr('id').replace('gallery-images-preview-', '');
-            var previewSelector = '#' + $(this).attr('id');
-            
-            // Asegurarse de que cada imagen tenga un icono de ordenamiento visible
-            $(previewSelector).find('.gallery-image').each(function() {
-                // Verificar si ya tiene un drag-handle
-                if ($(this).find('.drag-handle').length === 0) {
-                    $(this).append('<div class="drag-handle"></div>');
-                }
-                
-                // Asegurarse de que el drag-handle sea visible
-                $(this).find('.drag-handle').css('display', 'flex');
-            });
-            
-            // Inicializar sortable
-            initSortable(previewSelector, fieldName);
-        });
+    // Evento para abrir el explorador de medios para imagen destacada
+    $(document).on("click", ".upload-featured-image", function (e) {
+      e.preventDefault();
+
+      var fieldName = $(this).data("field");
+      var controlsContainer = $(this).closest(".featured-image-controls");
+      var previewSelector = "#featured-image-preview-" + fieldName;
+      var inputField = $("#featured-image-input-" + fieldName);
+
+      console.log(
+        "Abriendo selector de imagen destacada para el campo:",
+        fieldName
+      );
+
+      // Configurar el frame de medios
+      var featuredFrame = wp.media({
+        title: "Seleccionar imagen destacada",
+        library: {
+          type: "image",
+        },
+        button: {
+          text: "Establecer imagen destacada",
+        },
+        multiple: false,
+      });
+
+      // Cuando se selecciona una imagen
+      featuredFrame.on("select", function () {
+        var attachment = featuredFrame
+          .state()
+          .get("selection")
+          .first()
+          .toJSON();
+        console.log("Imagen destacada seleccionada:", attachment);
+
+        // Actualizar el campo oculto con el ID de la imagen
+        inputField.val(attachment.id);
+
+        // Obtener dimensiones configuradas
+        var imageWidth =
+          typeof JetFormMediaGallery !== "undefined" &&
+          JetFormMediaGallery.image_width
+            ? JetFormMediaGallery.image_width
+            : 150;
+        var imageHeight =
+          typeof JetFormMediaGallery !== "undefined" &&
+          JetFormMediaGallery.image_height
+            ? JetFormMediaGallery.image_height
+            : 150;
+
+        // Actualizar la vista previa
+        if ($(previewSelector).length === 0) {
+          controlsContainer.after(
+            '<div id="' +
+              previewSelector.substring(1) +
+              '" class="featured-image-preview"></div>'
+          );
+        }
+
+        var imageUrl = attachment.sizes.thumbnail
+          ? attachment.sizes.thumbnail.url
+          : attachment.url;
+        // Restaurar el botón original
+        $(previewSelector).html(
+          '<div class="image-overlay"></div><img src="' +
+            imageUrl +
+            '" alt="' +
+            attachment.alt +
+            '" style="width:' +
+            imageWidth +
+            "px;height:" +
+            imageHeight +
+            'px;object-fit:cover;"><a href="#" class="remove-featured-image">×</a>'
+        );
+        $(previewSelector).addClass("has-image").show();
+      });
+
+      featuredFrame.open();
     });
-    
+
+    // Evento para eliminar la imagen destacada
+    $(document).on("click", ".remove-featured-image", function (e) {
+      e.preventDefault();
+      e.stopPropagation(); // Evitar propagación del evento
+
+      var previewContainer = $(this).closest(".image-preview");
+      var fieldName = previewContainer
+        .attr("id")
+        .replace("featured-image-preview-", "");
+      var inputField = $("#featured-image-input-" + fieldName);
+
+      console.log("Eliminando imagen destacada del campo:", fieldName);
+
+      // Limpiar el campo oculto
+      inputField.val("");
+
+      // Ocultar la vista previa y eliminar clase has-image
+      previewContainer.removeClass("has-image").hide();
+
+      // Mantener la estructura HTML para futuros usos
+      previewContainer.html(
+        '<div class="image-overlay"></div><a href="#" class="remove-featured-image">×</a>'
+      );
+    });
+
+    // Función para inicializar sortable en la galería
+    function initSortable(previewSelector, fieldName) {
+      var galleryPreview = $(previewSelector);
+
+      if (
+        galleryPreview.length > 0 &&
+        !galleryPreview.hasClass("ui-sortable")
+      ) {
+        galleryPreview.sortable({
+          items: ".gallery-image",
+          handle: ".drag-handle",
+          placeholder: "ui-sortable-placeholder",
+          start: function (event, ui) {
+            ui.item.addClass("being-dragged");
+            ui.placeholder.css("visibility", "visible");
+          },
+          stop: function (event, ui) {
+            ui.item.removeClass("being-dragged");
+
+            // Actualizar el orden de las imágenes en el campo oculto
+            var updatedOrder = [];
+            galleryPreview.find(".gallery-image").each(function () {
+              updatedOrder.push($(this).data("id"));
+            });
+            $("#gallery-images-input-" + fieldName).val(updatedOrder.join(","));
+          },
+        });
+      }
+    }
+
+    // Aplicar estilos al select Menu cuando aparezca en el DOM
+    $(document).on("DOMNodeInserted", function (e) {
+      if (
+        $(e.target).is("select.media-menu") ||
+        $(e.target).find("select.media-menu").length > 0
+      ) {
+        console.log("  select detectado, aplicando estilos");
+
+        // Aplicar estilos directamente
+        $("select.media-menu").css({
+          "min-width": "200px",
+          width: "200px",
+          "max-width": "100%",
+          "font-size": "16px",
+          height: "40px",
+          padding: "5px 24px 5px 10px",
+          "background-color": "#fff",
+          border: "1px solid #8c8f94",
+          "border-radius": "4px",
+          "box-shadow": "0 0 0 transparent",
+          color: "#2c3338",
+          margin: "8px",
+          "-webkit-appearance": "menulist",
+          appearance: "menulist",
+        });
+      }
+    });
+
+    // Variable global para almacenar frames activos
+    var activeFrames = {};
+
+    // Evento para abrir el explorador de medios para galerías
+    $(document).on("click", ".upload-gallery-images", function (e) {
+      e.preventDefault();
+
+      var $button = $(this);
+      var fieldName = $button.data("field");
+
+      // Si ya hay un frame activo para este campo, cérralo primero
+      if (activeFrames[fieldName]) {
+        activeFrames[fieldName].close();
+        delete activeFrames[fieldName];
+      }
+
+      var controlsContainer = $button.closest(".gallery-controls");
+      var previewSelector = "#gallery-images-preview-" + fieldName;
+      var inputField = $("#gallery-images-input-" + fieldName);
+      var currentIds = inputField.val()
+        ? inputField.val().split(",").filter(Boolean)
+        : [];
+
+      console.log("Abriendo selector de galería para el campo:", fieldName);
+      console.log("IDs actuales:", currentIds);
+
+      // Función para procesar la selección de imágenes
+      function processSelection(attachments) {
+        console.log("Procesando selección de imágenes:", attachments.length);
+
+        if (attachments.length > 0) {
+          // Asegurarse de que el contenedor de galería exista y sea visible
+          if ($(previewSelector).length === 0) {
+            controlsContainer.after(
+              '<div id="' +
+                previewSelector.substring(1) +
+                '" class="images-preview"></div>'
+            );
+          }
+          $(previewSelector).show();
+
+          // Actualizar el campo oculto con los IDs de las imágenes
+          var newIds = attachments.map(function (attachment) {
+            return attachment.id.toString();
+          });
+
+          console.log("Nuevos IDs de imágenes:", newIds);
+          inputField.val(newIds.join(","));
+
+          // Limpiar y reconstruir la vista previa
+          $(previewSelector).empty();
+
+          // Obtener dimensiones configuradas
+          var imageWidth =
+            typeof JetFormMediaGallery !== "undefined" &&
+            JetFormMediaGallery.image_width
+              ? JetFormMediaGallery.image_width
+              : 150;
+          var imageHeight =
+            typeof JetFormMediaGallery !== "undefined" &&
+            JetFormMediaGallery.image_height
+              ? JetFormMediaGallery.image_height
+              : 150;
+
+          // Añadir cada imagen a la vista previa
+          $.each(attachments, function (index, attachment) {
+            var imageHtml =
+              '<div class="gallery-image" data-id="' +
+              attachment.id +
+              '">' +
+              '<img src="' +
+              (attachment.sizes.thumbnail
+                ? attachment.sizes.thumbnail.url
+                : attachment.url) +
+              '" alt="' +
+              attachment.alt +
+              '" style="width:' +
+              imageWidth +
+              "px;height:" +
+              imageHeight +
+              'px;object-fit:cover;">' +
+              '<a href="#" class="remove-image">×</a>' +
+              '<div class="drag-handle"></div>' +
+              '<input type="text" class="image-caption" placeholder="Caption..." value="' +
+              (attachment.caption || "") +
+              '">' +
+              "</div>";
+
+            $(previewSelector).append(imageHtml);
+            console.log("Añadida imagen a la vista previa:", attachment.id);
+          });
+
+          // Inicializar sortable para la nueva galería
+          initSortable(previewSelector, fieldName);
+        }
+      }
+
+      // Usar diferentes enfoques dependiendo de si hay imágenes existentes o no
+      try {
+        var frame;
+
+        // Siempre usar el enfoque de creación de galería para evitar problemas
+        // cuando se han eliminado todas las imágenes
+        console.log(
+          "Creando frame para selección de imágenes, IDs actuales:",
+          currentIds.length
+        );
+
+        // Configuración común para ambos modos
+        var frameOptions = {
+          multiple: true,
+          library: {
+            type: "image",
+          },
+        };
+
+        // Usar diferentes enfoques dependiendo de si hay imágenes existentes o no
+        if (currentIds.length > 0) {
+          // Si hay imágenes, usar el editor de galería con las imágenes existentes
+          var shortcode = '[gallery ids="' + currentIds.join(",") + '"]';
+          console.log("Usando shortcode con IDs:", shortcode);
+
+          // Crear el frame de edición de galería
+          frame = wp.media.gallery.edit(shortcode);
+
+          // Guardar referencia al frame activo
+          activeFrames[fieldName] = frame;
+
+          // Ocultar los ajustes de galería
+          frame.on("open", function () {
+            setTimeout(function () {
+              $(".gallery-settings").hide();
+            }, 100);
+          });
+
+          // Cuando se actualiza la galería
+          frame.state("gallery-edit").on("update", function (selection) {
+            console.log(
+              "Selección actualizada en modo Edit gallery, imágenes:",
+              selection.length
+            );
+
+            try {
+              // Obtener los attachments
+              var attachments = [];
+              selection.each(function (attachment) {
+                attachments.push(attachment.toJSON());
+              });
+
+              // Procesar la selección
+              processSelection(attachments);
+
+              // Eliminar referencia al frame
+              delete activeFrames[fieldName];
+            } catch (error) {
+              console.error("Error al procesar la selección:", error);
+            }
+          });
+        } else {
+          // Si no hay imágenes, usar un enfoque simplificado que siempre funciona
+          console.log("Creando nueva galería sin imágenes preseleccionadas");
+
+          // Usar un enfoque más simple y directo para la selección de imágenes
+          frame = wp.media({
+            title: "Seleccionar Imágenes",
+            button: {
+              text: "Añadir a la galería",
+            },
+            library: {
+              type: "image",
+            },
+            multiple: true,
+          });
+
+          // Guardar referencia al frame activo
+          activeFrames[fieldName] = frame;
+
+          // Cuando se abre el selector de medios
+          frame.on("open", function () {
+            console.log("Frame abierto para selección de imágenes");
+          });
+
+          // Cuando se seleccionan imágenes (usando el evento 'select' estándar)
+          frame.on("select", function () {
+            var selection = frame.state().get("selection");
+            console.log("Imágenes seleccionadas:", selection.length);
+
+            try {
+              // Obtener los attachments
+              var attachments = [];
+              selection.each(function (attachment) {
+                attachments.push(attachment.toJSON());
+              });
+
+              // Procesar la selección
+              processSelection(attachments);
+
+              // Eliminar referencia al frame
+              delete activeFrames[fieldName];
+            } catch (error) {
+              console.error("Error al procesar la selección:", error);
+            }
+          });
+
+          // Abrir el frame
+          frame.open();
+        }
+      } catch (error) {
+        console.error("Error al abrir el explorador de medios:", error);
+      }
+    });
+
+    // Eliminar imagen de la galería (delegación de eventos)
+    $(document).on("click", ".remove-image", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      var imageContainer = $(this).closest(".gallery-image");
+      var galleryPreview = imageContainer.closest(".images-preview");
+      var fieldName = galleryPreview
+        .attr("id")
+        .replace("gallery-images-preview-", "");
+      var imageId = imageContainer.data("id");
+      var inputField = $("#gallery-images-input-" + fieldName);
+      var galleryIds = inputField.val() ? inputField.val().split(",") : [];
+
+      galleryIds = galleryIds.filter(function (id) {
+        return id != imageId;
+      });
+
+      // Actualizar el valor del campo oculto
+      inputField.val(galleryIds.join(","));
+
+      // Eliminar la imagen de la vista previa
+      imageContainer.fadeOut(300, function () {
+        $(this).remove();
+
+        // Si no quedan imágenes, ocultar el contenedor de galería pero mantener el campo actualizado
+        if (galleryPreview.children(".gallery-image").length === 0) {
+          galleryPreview.hide();
+          console.log(
+            "Todas las imágenes han sido eliminadas del campo:",
+            fieldName
+          );
+        }
+      });
+    });
+
+    // Inicializar sortable para galerías existentes y asegurar que los iconos de ordenamiento sean visibles
+    $(".images-preview").each(function () {
+      var fieldName = $(this).attr("id").replace("gallery-images-preview-", "");
+      var previewSelector = "#" + $(this).attr("id");
+
+      // Asegurarse de que cada imagen tenga un icono de ordenamiento visible
+      $(previewSelector)
+        .find(".gallery-image")
+        .each(function () {
+          // Verificar si ya tiene un drag-handle
+          if ($(this).find(".drag-handle").length === 0) {
+            $(this).append('<div class="drag-handle"></div>');
+          }
+
+          // Asegurarse de que el drag-handle sea visible
+          $(this).find(".drag-handle").css("display", "flex");
+        });
+
+      // Inicializar sortable
+      initSortable(previewSelector, fieldName);
+    });
+  });
 })(jQuery);

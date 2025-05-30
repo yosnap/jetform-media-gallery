@@ -275,6 +275,11 @@ class JetForm_Media_Gallery_Field {
                 ];
             }
             
+            // Obtener configuración de tamaño de imágenes
+            $settings = $this->main->get_settings();
+            $image_width = isset($settings['image_width']) ? absint($settings['image_width']) : 150;
+            $image_height = isset($settings['image_height']) ? absint($settings['image_height']) : 150;
+            
             wp_localize_script('jetform-media-gallery', 'JetFormMediaGallery', [
                 'i18n' => [
                     'selectFeaturedImage' => __('Seleccionar imagen destacada', 'jetform-media-gallery'),
@@ -286,7 +291,9 @@ class JetForm_Media_Gallery_Field {
                 'is_mobile' => wp_is_mobile(),
                 'field_configs' => $field_configs,
                 'current_user_id' => get_current_user_id(), // Añadimos el ID del usuario actual
-                'filter_by_author' => true // Opción para activar/desactivar el filtro por autor
+                'filter_by_author' => true, // Opción para activar/desactivar el filtro por autor
+                'image_width' => $image_width, // Añadimos el ancho de imagen configurado
+                'image_height' => $image_height // Añadimos el alto de imagen configurado
             ]);
             
             // Encolar el script
