@@ -18,7 +18,8 @@ Plugin para WordPress que agrega un campo de galería de medios para JetFormBuil
 ## Novedades en la versión 1.1.9
 
 ### Correcciones importantes
-- Corregido error PHP relacionado con el uso de $_POST dentro de cadenas de texto de mensajes de log
+
+- Corregido error PHP relacionado con el uso de $\_POST dentro de cadenas de texto de mensajes de log
 - Aplicado correctamente el tamaño configurado a las imágenes de vista previa en el frontend
 - Mejorada la presentación visual de las imágenes al respetar los tamaños configurados
 - Optimizado el código JavaScript para usar las configuraciones globales de forma consistente
@@ -26,17 +27,20 @@ Plugin para WordPress que agrega un campo de galería de medios para JetFormBuil
 ## Novedades en la versión 1.1.8
 
 ### Filtrado de biblioteca por usuario
+
 - Ahora el explorador de medios muestra solo las imágenes subidas por el usuario actual
 - Los administradores pueden seguir viendo todas las imágenes
 - Mejora la seguridad y facilita la selección de imágenes propias
 
 ### Interfaz mejorada del explorador de medios
+
 - Eliminada la barra lateral para dar más espacio a las imágenes
 - Corregido el color del texto en los botones para mejorar la legibilidad
 - Eliminados elementos innecesarios que causaban solapamientos
 - Eliminados los checkboxes que aparecían en la esquina superior derecha de las imágenes
 
 ### Corrección de errores
+
 - Solucionado el problema con el botón de eliminar imagen destacada
 - Mejorada la experiencia de usuario en dispositivos móviles
 
@@ -113,30 +117,35 @@ Añade un campo HTML personalizado y dentro agrega el siguiente shortcode:
 ## Historial de cambios
 
 ### 1.1.1
+
 - Corregido el problema con el ordenamiento de imágenes existentes en la galería
 - Mejorada la selección de imágenes para que mantenga las selecciones previas
 - Optimizado el proceso de añadir imágenes para que se acumulen en lugar de reemplazarse
 - Reinicialización automática del sortable después de añadir nuevas imágenes
 
 ### 1.1.0
+
 - Rediseñada la interfaz de selección múltiple para iOS con indicadores visuales claros
 - Añadidas instrucciones paso a paso directamente en la interfaz
 - Mejorada la visibilidad de las imágenes seleccionadas con etiquetas en cada imagen
 - Optimizada la experiencia táctil para facilitar la selección de imágenes
 
 ### 1.0.9
+
 - Implementada selección múltiple real para dispositivos iOS con botones dedicados
 - Añadido botón de confirmación para aplicar la selección múltiple de imágenes
 - Mejorada la interfaz visual para la selección de imágenes en dispositivos móviles
 - Añadido botón de cancelación para el modo de selección múltiple
 
 ### 1.0.8
+
 - Mejorada compatibilidad con dispositivos iOS para subida múltiple de imágenes
 - Implementado soporte táctil para arrastrar y ordenar imágenes en dispositivos móviles
 - Añadida biblioteca jQuery UI Touch Punch para mejorar interacciones táctiles
 - Optimizada interfaz de usuario para selección de imágenes en iOS
 
 ### 1.1.2
+
 - Implementado panel de administración para personalizar el icono de ordenamiento (color, tamaño, posición, opacidad)
 - Mejorada la experiencia de arrastre para que el cursor solo cambie al pasar sobre el icono
 - Optimizada la interacción táctil en dispositivos móviles
@@ -146,6 +155,7 @@ Añade un campo HTML personalizado y dentro agrega el siguiente shortcode:
 - Corregidos errores de sintaxis en el código PHP
 
 ### 1.0.7
+
 - Añadida funcionalidad de ordenamiento de imágenes en campos de galería mediante arrastrar y soltar
 - Mejorada la experiencia en dispositivos móviles para la selección de múltiples imágenes
 - Añadido indicador visual (drag handle) para facilitar el ordenamiento
@@ -153,12 +163,14 @@ Añade un campo HTML personalizado y dentro agrega el siguiente shortcode:
 - Corregidos problemas de compatibilidad con diferentes navegadores móviles
 
 ### 1.0.6
+
 - Añadido soporte total para JetFormBuilder v3.x
 - Implementada detección de ID de post mejorada usando reflexión para casos complejos
 - Actualización para usar los hooks modernos de JetFormBuilder v3
 - Mejorado manejo de errores para evitar problemas de compatibilidad
 
 ### 1.0.5
+
 - Mejorada la integración con JetFormBuilder utilizando hooks específicos para inserción y actualización de posts
 - Añadido soporte para diferentes formatos de datos de galería (string, array, JSON)
 - Mejorada la detección y extracción de IDs de post desde diferentes contextos
@@ -166,22 +178,26 @@ Añade un campo HTML personalizado y dentro agrega el siguiente shortcode:
 - Añadido registro de diagnóstico más detallado para facilitar la depuración
 
 ### 1.0.4
+
 - Añadido soporte para carga automática de imágenes en modo edición
 - Mejorada la detección del ID de post en varios contextos
 - Corregido el problema con los campos que no mostraban las imágenes guardadas
 - Mejorado el sistema de logging para facilitar la depuración
 
 ### 1.0.3
+
 - Agregada nueva pestaña de administración de logs
 - Implementada interfaz para activar/desactivar modo debug
 - Añadido visor de logs con colores por tipo de mensaje
 - Mejorada la gestión y rotación de archivos de log
 
 ### 1.0.2
+
 - Corregido el procesamiento de campos del formulario
 - Mejorado el sistema de logging
 - Añadida compatibilidad con diferentes tipos de post
 - Optimizado el proceso de guardado de imágenes
 
 ### 1.0.1 y 1.0.0
+
 - Versiones iniciales del plugin
